@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TARAYAKI - Food Ordering System</title>
+    
+    <!-- PWA Manifest and Theme Color -->
+    <meta name="theme-color" content="#8B0000"/>
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts for Japanese Paint Style -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Vanilla JS Calendar -->
+    <link href="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.2.0/build/vanilla-js-calendar.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.2.0/build/vanilla-js-calendar.min.js"></script>
+
+    <style>
+        /* Custom styles to implement the theme */
+        body {
+            font-family: 'Yuji Syuku', serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 200 200'%3E%3Cdefs%3E%3Cpath id='a' d='M0 100a100 100 0 0 1 200 0 100 100 0 0 1-200 0zm0-50a50 50 0 0 1 100 0 50 50 0 0 1-100 0zm50 25a25 25 0 0 1 50 0 25 25 0 0 1-50 0z'/%3E%3C/defs%3E%3Cg fill='%23900' fill-opacity='0.1'%3E%3Cuse href='%23a' transform='translate(100 100) scale(1)'/%3E%3Cuse href='%23a' transform='translate(50 50) scale(0.9)'/%3E%3Cuse href='%23a' transform='translate(25 125) scale(0.8)'/%3E%3Cuse href='%23a' transform='translate(125 75) scale(0.7)'/%3E%3Cuse href='%23a' transform='translate(75 175) scale(0.6)'/%3E%3Cuse href='%23a' transform='translate(175 25) scale(0.5)'/%3E%3C/g%3E%3C/svg%3E");
+            background-attachment: fixed;
+        }
+
+        .font-japanese {
+            font-family: 'Yuji Syuku', serif;
+        }
+        
+        .text-golden {
+            color: #FFD700; /* Golden yellow color */
+        }
+        
+        .bg-golden {
+            background-color: #FFD700;
+        }
+
+        .bg-dark-red {
+            background-color: #8B0000;
+        }
+
+        .border-golden {
+            border-color: #FFD700;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-out {
+            animation: fadeOut 0.5s ease-in-out forwards;
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-20px); display:none; }
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -10px;
+            background-color: #FFD700;
+            color: #1a1a1a;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 2px solid #1a1a1a;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 40;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            border: 2px solid #FFD700;
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Minimalist scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #8B0000;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FFD700;
+        }
+
+        /* Custom glow effect */
+        .glow {
+             box-shadow: 0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #b38600;
+        }
+
+        /* Calendar Theme Overrides */
+        .vanilla-js-calendar {
+            width: 100%;
+            border: none;
+            background: transparent !important;
+        }
+        .vanilla-js-calendar .vjc-header {
+            color: #FFD700;
+        }
+        .vanilla-js-calendar .vjc-week, .vanilla-js-calendar .vjc-date {
+            color: #f0f0f0;
+            height: 60px; /* Increased height for sales text */
+        }
+        .vanilla-js-calendar .vjc-date--today .vjc-date-content {
+            background: #8B0000 !important;
+            color: #FFD700 !important;
+            border-radius: 50%;
+        }
+        .vanilla-js-calendar .vjc-date--selected .vjc-date-content {
+            background: #FFD700 !important;
+            color: #1a1a1a !important;
+        }
+        .vanilla-js-calendar .vjc-date:not(.vjc-date--disabled):hover .vjc-date-content {
+            background: #4a4a4a;
+            border-radius: 50%;
+        }
+        .vanilla-js-calendar .vjc-arrow-previous, .vanilla-js-calendar .vjc-arrow-next {
+            border-color: #FFD700;
+        }
+        .vjc-date-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            width: 100%;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+        .vjc-day-sale {
+            font-size: 0.7rem;
+            color: #22c55e; /* green */
+            font-weight: bold;
+            margin-top: 2px;
+            font-family: sans-serif; /* Use a more readable font for numbers */
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                color: black !important;
+                font-family: monospace;
+                padding: 20px;
+            }
+            .print-header { text-align: center; margin-bottom: 20px; }
+            .print-header h1 { font-size: 24px; font-weight: bold; margin: 0; }
+            .print-header p { margin: 2px 0; font-size: 14px; }
+            .print-table { width: 100%; border-collapse: collapse; }
+            .print-table th, .print-table td { padding: 5px; font-size: 14px; }
+            .print-table .item-col { text-align: left; }
+            .print-table .qty-col { text-align: center; }
+            .print-table .price-col { text-align: right; }
+            .print-totals { margin-top: 15px; text-align: right; }
+            .print-totals p { margin: 3px 0; font-size: 14px; }
+            .print-totals p.total { font-weight: bold; font-size: 16px; }
+            hr.print-hr { border-top: 1px dashed black; margin: 10px 0; }
+        }
+    </style>
+</head>
+<body class="bg-black text-white p-4 sm:p-6 md:p-8">
+
+    <!-- Admin Icon Button -->
+    <div id="admin-icon" class="fixed top-4 right-4 z-30">
+        <button onclick="showView('loginView')" class="bg-gray-800 border-2 border-golden text-golden p-3 rounded-full hover:bg-golden hover:text-black transition-colors duration-300 shadow-lg">
+            <i class="fas fa-user-shield fa-2x"></i>
+        </button>
+    </div>
+
+    <!-- Cashier Pending Orders Icon -->
+    <div id="cashier-icon" class="fixed top-4 left-4 z-30">
+        <button onclick="showCashierOrdersModal()" class="bg-gray-800 border-2 border-golden text-golden p-3 rounded-full hover:bg-golden hover:text-black transition-colors duration-300 shadow-lg">
+            <i class="fas fa-clipboard-list fa-2x"></i>
+        </button>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app-container" class="max-w-7xl mx-auto">
+        
+        <!-- =================================================================== -->
+        <!-- LOGIN VIEW -->
+        <!-- =================================================================== -->
+        <div id="loginView" class="hidden min-h-screen flex flex-col items-center justify-center p-4 fade-in">
+             <div class="text-center mb-8">
+                <h1 class="text-6xl md:text-8xl font-japanese text-golden">TARAYAKI</h1>
+                <p class="text-xl md:text-2xl text-red-500 font-japanese">Admin Access</p>
+            </div>
+            <div class="w-full max-w-sm bg-gray-900/50 backdrop-blur-sm border-2 border-golden rounded-2xl p-8 shadow-2xl glow">
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="mb-6">
+                        <label for="email" class="block text-golden font-japanese text-lg mb-2">EMAIL</label>
+                        <input type="text" id="email" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-golden font-japanese text-lg mb-2">PASSWORD</label>
+                        <input type="password" id="password" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <button type="submit" class="w-full bg-dark-red text-golden font-bold py-3 px-4 rounded-lg text-xl font-japanese hover:bg-red-700 transition-colors duration-300">
+                        ACCESS DASHBOARD
+                    </button>
+                    <p id="loginError" class="text-red-500 text-center mt-4"></p>
+                </form>
+                <button onclick="showView('kioskView')" class="w-full mt-4 text-gray-400 hover:text-white transition">Back to Kiosk</button>
+            </div>
+        </div>
+
+        <!-- =================================================================== -->
+        <!-- ADMIN DASHBOARD VIEW -->
+        <!-- =================================================================== -->
+        <div id="adminDashboardView" class="hidden p-4 fade-in">
+            <header class="flex justify-between items-center mb-8 border-b-2 border-golden pb-4">
+                <div>
+                    <h1 class="text-4xl font-japanese text-golden">TARAYAKI</h1>
+                    <p class="text-lg text-red-500">Admin Dashboard</p>
+                </div>
+                <div class="flex items-center space-x-6">
+                    <div class="relative">
+                        <button onclick="toggleSalesHistory()" class="text-golden hover:text-white transition">
+                            <i class="fas fa-history fa-2x"></i>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <i class="fas fa-bell fa-2x text-golden"></i>
+                        <span id="notification-badge" class="hidden notification-badge">0</span>
+                    </div>
+                     <button onclick="logout()" class="bg-dark-red text-golden py-2 px-4 rounded-lg font-japanese hover:bg-red-700 transition">Logout</button>
+                </div>
+            </header>
+            
+            <main>
+                <!-- Calendar and Sales Summary -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <div class="lg:col-span-2 bg-gray-900/50 backdrop-blur-sm border border-golden rounded-xl p-6 glow">
+                        <h2 class="text-2xl font-japanese text-golden mb-4">Sales Calendar</h2>
+                        <div id="admin-calendar"></div>
+                    </div>
+                    <div class="bg-gray-900/50 backdrop-blur-sm border border-golden rounded-xl p-6 glow flex flex-col justify-center">
+                        <h2 class="text-2xl font-japanese text-golden mb-4">Today's Performance</h2>
+                        <p class="text-5xl font-bold text-white">₱<span id="total-sales-today">0.00</span></p>
+                        <p class="text-gray-400">Total Sales Today</p>
+                    </div>
+                </div>
+
+                <!-- Orders List -->
+                <div id="admin-orders-container" class="bg-gray-900/50 backdrop-blur-sm border border-golden rounded-xl p-6">
+                    <h2 class="text-3xl font-japanese text-golden mb-6">Live Orders</h2>
+                    <div id="admin-orders-list" class="space-y-4">
+                        <!-- Orders will be dynamically injected here -->
+                        <p class="text-center text-gray-400">No new orders yet.</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+        
+        <!-- =================================================================== -->
+        <!-- CUSTOMER KIOSK VIEW -->
+        <!-- =================================================================== -->
+        <div id="kioskView">
+            <!-- Header -->
+            <header class="text-center mb-8 fade-in">
+                <button id="back-button" onclick="goBack()" class="absolute top-8 left-8 text-golden text-2xl hidden"><i class="fas fa-arrow-left"></i> Back</button>
+                <h1 class="text-6xl md:text-8xl font-japanese text-golden">TARAYAKI</h1>
+                <p class="text-xl md:text-2xl text-red-500 font-japanese">Tara, Takoyaki!</p>
+            </header>
+
+            <!-- Main Content Area -->
+            <main id="main-content">
+                <!-- Step 1: Order Type Selection -->
+                <section id="order-type-selection" class="fade-in">
+                    <h2 class="text-4xl text-center font-japanese mb-8">How would you like to order?</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+                        <div onclick="selectOrderType('Dine-In')" class="cursor-pointer bg-dark-red border-2 border-golden rounded-2xl p-8 transform hover:scale-105 transition-transform duration-300 glow">
+                            <i class="fas fa-utensils fa-4x mb-4 text-golden"></i>
+                            <h3 class="text-3xl font-japanese">Dine In</h3>
+                        </div>
+                        <div onclick="selectOrderType('Pick-Up')" class="cursor-pointer bg-dark-red border-2 border-golden rounded-2xl p-8 transform hover:scale-105 transition-transform duration-300 glow">
+                            <i class="fas fa-shopping-bag fa-4x mb-4 text-golden"></i>
+                            <h3 class="text-3xl font-japanese">Pick Up</h3>
+                        </div>
+                        <div onclick="selectOrderType('Delivery')" class="cursor-pointer bg-dark-red border-2 border-golden rounded-2xl p-8 transform hover:scale-105 transition-transform duration-300 glow">
+                            <i class="fas fa-motorcycle fa-4x mb-4 text-golden"></i>
+                            <h3 class="text-3xl font-japanese">Delivery</h3>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Step 2: Menu Selection -->
+                <section id="menu-selection" class="hidden">
+                    <!-- Menu Categories -->
+                    <div id="menu-categories" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <button onclick="showMenuCategory('solo')" class="menu-category-btn bg-dark-red text-golden p-4 rounded-lg text-2xl font-japanese border-2 border-golden transform hover:scale-105 transition">SOLO (4pcs)</button>
+                        <button onclick="showMenuCategory('duo')" class="menu-category-btn bg-dark-red text-golden p-4 rounded-lg text-2xl font-japanese border-2 border-golden transform hover:scale-105 transition">DUO (8pcs)</button>
+                        <button onclick="showMenuCategory('supreme')" class="menu-category-btn bg-dark-red text-golden p-4 rounded-lg text-2xl font-japanese border-2 border-golden transform hover:scale-105 transition">SUPREME (12pcs)</button>
+                        <button onclick="showMenuCategory('others')" class="menu-category-btn bg-dark-red text-golden p-4 rounded-lg text-2xl font-japanese border-2 border-golden transform hover:scale-105 transition">OTHERS</button>
+                    </div>
+                    <!-- Menu Items Display -->
+                    <div id="menu-items-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Items will be injected here -->
+                    </div>
+                </section>
+                
+                 <!-- Step 3: Checkout Form -->
+                <section id="checkout-form" class="hidden p-4 md:p-8 bg-gray-900/50 backdrop-blur-sm border-2 border-golden rounded-2xl max-w-2xl mx-auto">
+                    <h2 class="text-4xl text-center font-japanese text-golden mb-6">Complete Your Order</h2>
+                    <div class="space-y-4">
+                         <div>
+                            <label class="text-golden font-japanese text-lg">Name</label>
+                            <input type="text" id="customer-name" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white" required>
+                        </div>
+                        
+                        <!-- Delivery specific fields -->
+                        <div id="delivery-fields" class="hidden space-y-4">
+                             <div>
+                                <label class="text-golden font-japanese text-lg">Municipality</label>
+                                <select id="municipality" onchange="updateLocations()" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white">
+                                    <option value="">Select Municipality</option>
+                                    <option value="Bobon">Bobon</option>
+                                    <option value="San Jose">San Jose</option>
+                                    <option value="Catarman">Catarman</option>
+                                </select>
+                            </div>
+                             <div>
+                                <label class="text-golden font-japanese text-lg">Location (Barangay/Sitio)</label>
+                                <select id="location" onchange="updateDeliveryCharge()" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white">
+                                    <!-- Options populated by JS -->
+                                </select>
+                                <p id="delivery-charge-text" class="text-sm mt-2 text-golden"></p>
+                            </div>
+                             <div>
+                                <label class="text-golden font-japanese text-lg">Near At / Landmark</label>
+                                <input type="text" id="landmark" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white">
+                            </div>
+                        </div>
+
+                        <!-- Pick-up specific fields -->
+                        <div id="pickup-fields" class="hidden space-y-4">
+                            <div>
+                                <label class="text-golden font-japanese text-lg">Time for Pick-up</label>
+                                <input type="time" id="pickup-time" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <input type="checkbox" id="hot-sauce" class="h-5 w-5 bg-black border-golden text-red-500 focus:ring-red-500">
+                            <label for="hot-sauce" class="text-golden font-japanese text-lg">Request for Hot Sauce?</label>
+                        </div>
+                        <div id="hot-sauce-notes-container" class="hidden">
+                             <label class="text-golden font-japanese text-lg">Optional Description</label>
+                             <textarea id="hot-sauce-notes" rows="2" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="text-golden font-japanese text-lg">Mode of Payment</label>
+                            <select id="payment-mode" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white">
+                                <option value="Cash">Cash</option>
+                                <option value="GCash">GCash</option>
+                            </select>
+                        </div>
+                        
+                        <button onclick="finalizeOrder()" class="w-full bg-blue-600 text-white font-bold py-4 px-4 rounded-lg text-2xl font-japanese hover:bg-blue-800 transition-colors duration-300">
+                           COMPLETE ORDER
+                        </button>
+                    </div>
+                </section>
+
+            </main>
+
+            <!-- Floating Cart Button -->
+            <div id="cart-button" class="hidden fixed bottom-8 right-8 z-20">
+                <button onclick="showCartModal()" class="bg-golden text-black rounded-full px-6 py-4 shadow-lg flex items-center space-x-3 text-xl font-bold font-japanese transform hover:scale-110 transition-transform">
+                    <span id="cart-total-amount">₱0.00</span>
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-item-count" class="bg-red-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- MODALS (Pop-ups) -->
+    <!-- =================================================================== -->
+
+    <!-- Instructions Modal -->
+    <div id="instructionsModal" class="modal-backdrop fade-in">
+        <div class="modal-content text-center">
+            <h2 class="text-4xl font-japanese text-golden mb-6">How to Order</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-white">
+                <div class="bg-gray-800 p-4 rounded-lg border border-golden">
+                    <i class="fas fa-hand-pointer fa-3x text-golden mb-2"></i>
+                    <h3 class="font-bold text-lg">1. Choose Service</h3>
+                    <p>Select Dine-In, Pick-Up, or Delivery.</p>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg border border-golden">
+                    <i class="fas fa-utensils fa-3x text-golden mb-2"></i>
+                    <h3 class="font-bold text-lg">2. Choose Orders</h3>
+                    <p>Add your favorite Takoyaki and drinks to your cart.</p>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg border border-golden">
+                    <i class="fas fa-cash-register fa-3x text-golden mb-2"></i>
+                    <h3 class="font-bold text-lg">3. Check Out</h3>
+                    <p>Click the cart, review your order, and fill up the form.</p>
+                </div>
+                <div class="bg-gray-800 p-4 rounded-lg border border-golden">
+                    <i class="fab fa-facebook fa-3x text-blue-500 mb-2"></i>
+                    <h3 class="font-bold text-lg">4. Send Receipt</h3>
+                    <p>For GCash/Online Payments, send the receipt to our Facebook page.</p>
+                </div>
+            </div>
+            <button onclick="closeInstructionsModal()" class="mt-8 bg-dark-red text-golden py-2 px-6 rounded-lg font-japanese text-xl">Start Ordering</button>
+            <p class="text-sm text-gray-400 mt-2">This will close automatically in <span id="modal-timer">15</span>s.</p>
+        </div>
+    </div>
+
+    <!-- Drink Prompt Modal -->
+    <div id="drinkPromptModal" class="hidden modal-backdrop">
+        <div class="modal-content text-center">
+            <h2 class="text-3xl font-japanese text-golden mb-6">Add drinks to your Takoyaki?</h2>
+            <div id="drinks-modal-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left max-h-64 overflow-y-auto p-2">
+                <!-- Drinks will be loaded here -->
+            </div>
+            <div class="flex justify-center space-x-4 mt-8">
+                <button onclick="proceedToCheckoutForm()" class="bg-gray-600 text-white py-3 px-8 rounded-lg font-japanese text-lg">No, Thanks</button>
+                <button onclick="proceedToCheckoutForm(true)" class="bg-blue-600 text-white py-3 px-8 rounded-lg font-japanese text-lg">Add & Continue</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Cart Modal -->
+    <div id="cartModal" class="hidden modal-backdrop">
+        <div class="modal-content w-full max-w-lg">
+            <h2 class="text-4xl font-japanese text-golden mb-6 text-center">Your Order</h2>
+            <div id="cart-items-list" class="space-y-4 mb-6">
+                <!-- Cart items will be displayed here -->
+            </div>
+            <div class="border-t-2 border-golden pt-4 text-right space-y-1">
+                 <p class="text-lg">Subtotal: <span id="cart-subtotal" class="font-bold">₱0.00</span></p>
+                 <p id="cart-discount-row" class="text-lg text-green-400 hidden">Combo Discount: <span id="cart-discount" class="font-bold">- ₱0.00</span></p>
+                 <p class="text-lg">Delivery Fee: <span id="cart-delivery-fee" class="font-bold">₱0.00</span></p>
+                 <h3 class="text-2xl font-bold">Total: <span id="cart-grand-total" class="text-golden">₱0.00</span></h3>
+            </div>
+            <div class="flex justify-between mt-8">
+                <button onclick="closeCartModal()" class="bg-gray-600 text-white py-3 px-6 rounded-lg font-japanese text-lg">Close</button>
+                <button onclick="proceedToDrinkPrompt()" class="bg-green-600 text-white py-3 px-6 rounded-lg font-japanese text-lg" id="checkout-button-from-cart" disabled>Check Out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="hidden modal-backdrop">
+        <div class="modal-content w-full max-w-md text-center">
+            <h2 class="text-4xl font-japanese text-green-400 mb-2">Order Placed!</h2>
+            <p class="text-xl mb-6">THANK YOU FOR ORDERING, ENJOY 💗</p>
+            <div id="receipt-content" class="text-left bg-black p-6 rounded-lg border-2 border-dashed border-golden">
+                <!-- Receipt details injected here -->
+            </div>
+            <div id="gcash-info" class="hidden mt-6 text-center">
+                <h3 class="text-2xl font-japanese text-golden">GCash Payment</h3>
+                <p>Scan the QR code or use the number below.</p>
+                <img src="https://i.imgur.com/8h2n3rS.png" alt="GCash QR Code" class="mx-auto my-4 w-48 h-48 border-2 border-golden rounded-lg">
+                <p class="text-2xl font-bold text-golden">0976 579 6838</p>
+            </div>
+            <div class="flex justify-center space-x-4 mt-8">
+                <button onclick="finishOrder()" class="bg-dark-red text-golden py-3 px-8 rounded-lg font-japanese text-xl">Done ✅</button>
+                <button onclick="printReceipt('receipt-content', true)" class="bg-gray-600 text-white py-3 px-8 rounded-lg font-japanese text-xl"><i class="fas fa-print mr-2"></i>Print</button>
+            </div>
+        </div>
+    </div>
+
+     <!-- Admin Receipt/Order Details Modal -->
+    <div id="adminReceiptModal" class="hidden modal-backdrop">
+        <div id="admin-receipt-content-wrapper" class="modal-content w-full max-w-md">
+            <div id="admin-receipt-content">
+                <!-- Details injected by JS -->
+            </div>
+             <div class="flex justify-end space-x-4 mt-4">
+                <button onclick="closeAdminReceipt()" class="bg-gray-600 text-white py-2 px-4 rounded-lg font-japanese text-lg">Close</button>
+                <button onclick="printReceipt('admin-receipt-content', false)" class="bg-blue-600 text-white py-2 px-4 rounded-lg font-japanese text-lg"><i class="fas fa-print mr-2"></i>Print</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales History Modal -->
+    <div id="salesHistoryModal" class="hidden modal-backdrop">
+        <div class="modal-content w-full max-w-2xl">
+            <h2 class="text-4xl font-japanese text-golden mb-6">Sales History</h2>
+            <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
+                <input type="date" id="sales-start-date" class="bg-black border-golden border-2 p-2 rounded w-full">
+                <input type="date" id="sales-end-date" class="bg-black border-golden border-2 p-2 rounded w-full">
+                <button onclick="generateSalesReport()" class="bg-blue-600 p-2 rounded text-white px-4 whitespace-nowrap">Generate</button>
+                <button onclick="exportSalesToCSV()" class="bg-green-600 p-2 rounded text-white px-4 whitespace-nowrap"><i class="fas fa-file-csv mr-2"></i>Export</button>
+            </div>
+            <div class="bg-black p-4 rounded-lg border border-golden max-h-96 overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl">Total Sales: <span id="sales-history-total" class="text-golden font-bold">₱0.00</span></h3>
+                    <button onclick="closeSalesHistory()" class="text-2xl">&times;</button>
+                </div>
+                <div id="sales-history-list" class="space-y-2">
+                    <!-- History list injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="hidden modal-backdrop">
+        <div class="modal-content w-full max-w-sm text-center">
+            <h2 class="text-3xl font-japanese text-red-500 mb-4">Confirm Deletion</h2>
+            <p class="text-lg mb-8">Are you sure you want to delete this order? This action cannot be undone.</p>
+            <div id="delete-confirm-details" class="text-left mb-6 bg-gray-800 p-4 rounded-lg border border-golden"></div>
+            <div class="flex justify-center space-x-4">
+                <button onclick="closeDeleteConfirmModal()" class="bg-gray-600 text-white py-3 px-8 rounded-lg font-japanese text-lg">Cancel</button>
+                <button id="confirm-delete-btn" onclick="confirmDelete()" class="bg-red-700 text-white py-3 px-8 rounded-lg font-japanese text-lg">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cashier Orders Modal -->
+    <div id="cashierOrdersModal" class="hidden modal-backdrop">
+        <div class="modal-content w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-4xl font-japanese text-golden">Pending & Live Orders</h2>
+                <button onclick="closeCashierOrdersModal()" class="text-3xl">&times;</button>
+            </div>
+            <div id="cashier-orders-list" class="space-y-4 max-h-[70vh] overflow-y-auto p-2">
+                <!-- Cashier orders will be injected here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hidden Printable Area -->
+    <div id="print-area" class="hidden"></div>
+
+    <!-- Audio for notification -->
+    <audio id="notification-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-clear-interface-bell-461.mp3" preload="auto"></audio>
+
+<script>
+// ===================================================================
+// INITIALIZATION & STATE
+// ===================================================================
+const menu = {
+    solo: [
+        { id: 's1', name: 'Cheeseyaki', price: 45 },
+        { id: 's2', name: 'Hamyaki', price: 49 },
+        { id: 's3', name: 'Crabyaki', price: 49 },
+        { id: 's4', name: 'Takoyaki (octobits)', price: 49 },
+        { id: 's5', name: 'Assorted', price: 54 },
+    ],
+    duo: [
+        { id: 'd1', name: 'Cheeseyaki', price: 85 },
+        { id: 'd2', name: 'Hamyaki', price: 89 },
+        { id: 'd3', name: 'Crabyaki', price: 89 },
+        { id: 'd4', name: 'Takoyaki (octobits)', price: 89 },
+        { id: 'd5', name: 'Assorted', price: 94 },
+    ],
+    supreme: [
+        { id: 'p1', name: 'Cheeseyaki', price: 125 },
+        { id: 'p2', name: 'Hamyaki', price: 129 },
+        { id: 'p3', name: 'Crabyaki', price: 129 },
+        { id: 'p4', name: 'Takoyaki (octobits)', price: 129 },
+        { id: 'p5', name: 'Assorted', price: 134 },
+    ],
+    others: [
+        { id: 'o1', name: 'Fruit Soda (Blueberry)', type: 'drink', price: 39 },
+        { id: 'o2', name: 'Fruit Soda (Green Apple)', type: 'drink', price: 39 },
+        { id: 'o3', name: 'Fruit Soda (Wintermelon)', type: 'drink', price: 39 },
+        { id: 'o4', name: 'Fruit Soda (Strawberry)', type: 'drink', price: 39 },
+        { id: 'o5', name: 'Fruit Soda (Bluelemonade)', type: 'drink', price: 39 },
+        { id: 'o6', name: 'Fruit Soda (Four Season)', type: 'drink', price: 39 },
+        { id: 'o7', name: 'Fruit Soda (Lychee)', type: 'drink', price: 39 },
+        { id: 'o8', name: 'Coke in Can', type: 'drink', price: 40 },
+        { id: 'o9', name: 'Sprite in Can', type: 'drink', price: 40 },
+        { id: 'o10', name: 'Royal in Can', type: 'drink', price: 40 },
+        { id: 'o11', name: 'Mountain Dew in Can', type: 'drink', price: 40 },
+        { id: 'o12', name: 'Pepsi in Can', type: 'drink', price: 40 },
+        { id: 'o13', name: 'Water', type: 'drink', price: 15 },
+        { id: 'o14', name: 'Polvoron', type: 'dessert', price: 10 },
+        { id: 'o15', name: 'Pastillas', type: 'dessert', price: 5 },
+    ]
+};
+
+const locations = {
+    Bobon: [
+        { name: "Magsaysay", charge: 0 },
+        { name: "Sitio, Balud (Magsaysay)", charge: 10 },
+        { name: "Sta. Clara", charge: 0 },
+        { name: "San Juan", charge: 0 },
+        { name: "Gen. Lucban", charge: 0 },
+        { name: "Baybay", charge: 0 },
+        { name: "Salvacion", charge: 0 },
+        { name: "Feeder Road (Salvacion)", charge: 0 },
+        { name: "Sitio Balucawe (Salvacion)", charge: 10 },
+        { name: "Balat Balud", charge: 15 },
+        { name: "San Isidro", charge: 10 },
+        { name: "Dancalan", charge: 20 },
+    ],
+    "San Jose": [
+        { name: "Geratag", charge: 25 },
+        { name: "Aguadahan", charge: 35 },
+        { name: "Layuhan", charge: 40 },
+        { name: "North", charge: 40 },
+        { name: "West", charge: 40 },
+        { name: "P. Tingson", charge: 40 },
+    ],
+    Catarman: [
+        { name: "Rizal", charge: 10 },
+        { name: "Daganas", charge: 15 },
+        { name: "Dalakit", charge: 20 },
+        { name: "Bankerohan", charge: 30 },
+    ]
+};
+
+let appState = {
+    currentView: 'kioskView',
+    kioskStep: 'order-type', // 'order-type', 'menu', 'checkout'
+    orderType: '',
+    cart: [],
+    allOrders: [], // Simulates a database of all orders
+    deliveryCharge: 0,
+    newNotificationCount: 0,
+};
+
+let calendarInstance = null;
+
+// ===================================================================
+// DOMContentLoaded - App Startup
+// ===================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Timer logic for the instructions modal
+    const instructionsModal = document.getElementById('instructionsModal');
+    const timerEl = document.getElementById('modal-timer');
+    let timeLeft = 15;
+
+    const intervalId = setInterval(() => {
+        timeLeft--;
+        if (timerEl) timerEl.textContent = timeLeft;
+        if (timeLeft <= 0) {
+            clearInterval(intervalId);
+            // Check if modal is still open before trying to close it
+            if (!instructionsModal.classList.contains('hidden')) {
+                closeInstructionsModal();
+            }
+        }
+    }, 1000);
+
+    // Store the interval ID on the modal so it can be cleared if closed manually
+    instructionsModal.dataset.intervalId = intervalId;
+    
+    document.getElementById('hot-sauce').addEventListener('change', (e) => {
+        document.getElementById('hot-sauce-notes-container').style.display = e.target.checked ? 'block' : 'none';
+    });
+});
+
+// ===================================================================
+// VIEW MANAGEMENT
+// ===================================================================
+function showView(viewId) {
+    document.querySelectorAll('#app-container > div, #loginView').forEach(view => {
+        view.classList.add('hidden');
+    });
+    document.getElementById(viewId).classList.remove('hidden');
+    appState.currentView = viewId;
+    
+    // Hide/show admin and cashier icons based on view
+    const adminIcon = document.getElementById('admin-icon');
+    const cashierIcon = document.getElementById('cashier-icon');
+    if (viewId === 'kioskView') {
+        adminIcon.classList.remove('hidden');
+        cashierIcon.classList.remove('hidden');
+    } else {
+        adminIcon.classList.add('hidden');
+        cashierIcon.classList.add('hidden');
+    }
+}
+
+function goBack() {
+    if (appState.kioskStep === 'menu') {
+        appState.kioskStep = 'order-type';
+        document.getElementById('menu-selection').classList.add('hidden');
+        document.getElementById('order-type-selection').classList.remove('hidden');
+        document.getElementById('back-button').classList.add('hidden');
+        document.getElementById('cart-button').classList.add('hidden');
+    } else if (appState.kioskStep === 'checkout') {
+        appState.kioskStep = 'menu';
+        document.getElementById('checkout-form').classList.add('hidden');
+        document.getElementById('menu-selection').classList.remove('hidden');
+        document.getElementById('cart-button').classList.remove('hidden');
+    }
+}
+
+// ===================================================================
+// INSTRUCTIONS MODAL
+// ===================================================================
+function closeInstructionsModal() {
+    const instructionsModal = document.getElementById('instructionsModal');
+    const intervalId = instructionsModal.dataset.intervalId;
+    if (intervalId) {
+        clearInterval(intervalId);
+    }
+    instructionsModal.classList.add('fade-out');
+    setTimeout(() => {
+        instructionsModal.classList.add('hidden');
+        instructionsModal.classList.remove('fade-out');
+    }, 500);
+}
+
+
+// ===================================================================
+// KIOSK ORDERING FLOW
+// ===================================================================
+function selectOrderType(type) {
+    appState.orderType = type;
+    appState.kioskStep = 'menu';
+    
+    const orderTypeSection = document.getElementById('order-type-selection');
+    orderTypeSection.classList.add('fade-out');
+    setTimeout(() => {
+        orderTypeSection.classList.add('hidden');
+        orderTypeSection.classList.remove('fade-out');
+        
+        const menuSection = document.getElementById('menu-selection');
+        menuSection.classList.remove('hidden');
+        menuSection.classList.add('fade-in');
+
+        document.getElementById('back-button').classList.remove('hidden');
+        document.getElementById('cart-button').classList.remove('hidden');
+        showMenuCategory('solo'); // Default to solo view
+    }, 500);
+}
+
+function showMenuCategory(categoryKey) {
+    const container = document.getElementById('menu-items-container');
+    container.innerHTML = '';
+    
+    // Style active button
+    document.querySelectorAll('.menu-category-btn').forEach(btn => {
+        btn.classList.remove('bg-golden', 'text-black', 'glow');
+        btn.classList.add('bg-dark-red', 'text-golden');
+    });
+    const activeBtn = document.querySelector(`button[onclick="showMenuCategory('${categoryKey}')"]`);
+    activeBtn.classList.add('bg-golden', 'text-black', 'glow');
+    activeBtn.classList.remove('bg-dark-red', 'text-golden');
+
+    menu[categoryKey].forEach(item => {
+        const itemInCart = appState.cart.find(cartItem => cartItem.id === item.id);
+        const quantity = itemInCart ? itemInCart.quantity : 0;
+        
+        const itemHTML = `
+            <div class="bg-gray-900 border-2 border-golden rounded-xl p-4 flex flex-col justify-between fade-in">
+                <div>
+                    <h4 class="text-2xl font-japanese text-golden">${item.name}</h4>
+                    <p class="text-xl mb-4">₱${item.price.toFixed(2)}</p>
+                </div>
+                <div class="flex items-center justify-center space-x-4">
+                    <button onclick="updateCart('${item.id}', -1)" class="bg-dark-red text-golden rounded-full h-10 w-10 text-2xl font-bold flex items-center justify-center">-</button>
+                    <span id="qty-${item.id}" class="text-2xl font-bold w-12 text-center">${quantity}</span>
+                    <button onclick="updateCart('${item.id}', 1)" class="bg-dark-red text-golden rounded-full h-10 w-10 text-2xl font-bold flex items-center justify-center">+</button>
+                </div>
+            </div>
+        `;
+        container.innerHTML += itemHTML;
+    });
+}
+
+// ===================================================================
+// CART MANAGEMENT & DISCOUNT LOGIC
+// ===================================================================
+function calculateDiscount(cart) {
+    const hasTakoyaki = cart.some(item => ['s', 'd', 'p'].includes(item.id.charAt(0)));
+    const hasDrink = cart.some(item => {
+        const otherItem = menu.others.find(oi => oi.id === item.id);
+        return otherItem && otherItem.type === 'drink';
+    });
+
+    return hasTakoyaki && hasDrink ? 4.00 : 0;
+}
+
+function updateCart(itemId, change) {
+    const allItems = [].concat(...Object.values(menu));
+    const itemDetails = allItems.find(item => item.id === itemId);
+    
+    let itemInCart = appState.cart.find(cartItem => cartItem.id === itemId);
+
+    if (itemInCart) {
+        itemInCart.quantity += change;
+        if (itemInCart.quantity <= 0) {
+            appState.cart = appState.cart.filter(cartItem => cartItem.id !== itemId);
+        }
+    } else if (change > 0) {
+        appState.cart.push({ ...itemDetails, quantity: 1 });
+    }
+
+    // Update quantity display on menu
+    const qtyEl = document.getElementById(`qty-${itemId}`);
+    if (qtyEl) {
+        const updatedItem = appState.cart.find(cartItem => cartItem.id === itemId);
+        qtyEl.textContent = updatedItem ? updatedItem.quantity : 0;
+    }
+    
+    updateCartDisplay();
+}
+
+function updateCartDisplay() {
+    const subtotal = appState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const totalItems = appState.cart.reduce((sum, item) => sum + item.quantity, 0);
+    const discount = calculateDiscount(appState.cart);
+
+    document.getElementById('cart-total-amount').textContent = `₱${(subtotal - discount).toFixed(2)}`;
+    document.getElementById('cart-item-count').textContent = totalItems;
+    
+    const checkoutButton = document.getElementById('checkout-button-from-cart');
+    if (totalItems > 0) {
+        checkoutButton.disabled = false;
+        checkoutButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+        checkoutButton.classList.add('bg-green-600');
+    } else {
+        checkoutButton.disabled = true;
+        checkoutButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+        checkoutButton.classList.remove('bg-green-600');
+    }
+}
+
+function showCartModal() {
+    const listEl = document.getElementById('cart-items-list');
+    listEl.innerHTML = '';
+
+    if (appState.cart.length === 0) {
+        listEl.innerHTML = '<p class="text-center text-gray-400">Your cart is empty.</p>';
+    } else {
+        appState.cart.forEach(item => {
+            listEl.innerHTML += `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-lg text-golden">${item.name}</p>
+                        <p class="text-sm text-gray-400">${item.quantity} x ₱${item.price.toFixed(2)}</p>
+                    </div>
+                    <p class="text-xl font-bold">₱${(item.quantity * item.price).toFixed(2)}</p>
+                </div>
+            `;
+        });
+    }
+
+    const subtotal = appState.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const discount = calculateDiscount(appState.cart);
+    
+    document.getElementById('cart-subtotal').textContent = `₱${subtotal.toFixed(2)}`;
+    
+    const discountRow = document.getElementById('cart-discount-row');
+    if (discount > 0) {
+        document.getElementById('cart-discount').textContent = `- ₱${discount.toFixed(2)}`;
+        discountRow.classList.remove('hidden');
+    } else {
+        discountRow.classList.add('hidden');
+    }
+    
+    document.getElementById('cart-delivery-fee').textContent = `₱${appState.deliveryCharge.toFixed(2)}`;
+    document.getElementById('cart-grand-total').textContent = `₱${(subtotal - discount + appState.deliveryCharge).toFixed(2)}`;
+
+    document.getElementById('cartModal').classList.remove('hidden');
+}
+
+function closeCartModal() {
+    document.getElementById('cartModal').classList.add('hidden');
+}
+
+
+// ===================================================================
+// CHECKOUT FLOW
+// ===================================================================
+function proceedToDrinkPrompt() {
+    closeCartModal();
+    const drinksModalContainer = document.getElementById('drinks-modal-container');
+    drinksModalContainer.innerHTML = '';
+    const drinks = menu.others.filter(item => item.type === 'drink');
+    
+    drinks.forEach(drink => {
+        const itemInCart = appState.cart.find(cartItem => cartItem.id === drink.id);
+        const quantity = itemInCart ? itemInCart.quantity : 0;
+        drinksModalContainer.innerHTML += `
+            <div class="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
+                <p class="text-golden">${drink.name} (₱${drink.price.toFixed(2)})</p>
+                <div class="flex items-center space-x-2">
+                    <button onclick="updateCart('${drink.id}', -1); updateDrinkModalQty('${drink.id}')" class="bg-dark-red text-golden rounded-full h-8 w-8 text-xl font-bold">-</button>
+                    <span id="drink-qty-${drink.id}" class="text-lg font-bold w-8 text-center">${quantity}</span>
+                    <button onclick="updateCart('${drink.id}', 1); updateDrinkModalQty('${drink.id}')" class="bg-dark-red text-golden rounded-full h-8 w-8 text-xl font-bold">+</button>
+                </div>
+            </div>
+        `;
+    });
+
+    document.getElementById('drinkPromptModal').classList.remove('hidden');
+}
+
+function updateDrinkModalQty(itemId) {
+    const itemInCart = appState.cart.find(item => item.id === itemId);
+    document.getElementById(`drink-qty-${itemId}`).textContent = itemInCart ? itemInCart.quantity : 0;
+}
+
+function proceedToCheckoutForm() {
+    document.getElementById('drinkPromptModal').classList.add('hidden');
+    
+    appState.kioskStep = 'checkout';
+    document.getElementById('menu-selection').classList.add('hidden');
+    document.getElementById('cart-button').classList.add('hidden');
+    
+    const checkoutForm = document.getElementById('checkout-form');
+    checkoutForm.classList.remove('hidden');
+    checkoutForm.classList.add('fade-in');
+
+    // Show/hide fields based on order type
+    document.getElementById('delivery-fields').style.display = appState.orderType === 'Delivery' ? 'block' : 'none';
+    document.getElementById('pickup-fields').style.display = appState.orderType === 'Pick-Up' ? 'block' : 'none';
+    
+    if (appState.orderType === 'Delivery') {
+        updateLocations(); // Initialize location dropdown
+    }
+}
+
+function updateLocations() {
+    const municipality = document.getElementById('municipality').value;
+    const locationSelect = document.getElementById('location');
+    locationSelect.innerHTML = '<option value="">Select Location</option>';
+    if (locations[municipality]) {
+        locations[municipality].forEach(loc => {
+            locationSelect.innerHTML += `<option value="${loc.name}">${loc.name}</option>`;
+        });
+    }
+    updateDeliveryCharge();
+}
+
+function updateDeliveryCharge() {
+    const municipality = document.getElementById('municipality').value;
+    const locationName = document.getElementById('location').value;
+    const textEl = document.getElementById('delivery-charge-text');
+    appState.deliveryCharge = 0;
+    
+    if (municipality && locationName && locations[municipality]) {
+        const loc = locations[municipality].find(l => l.name === locationName);
+        if (loc) {
+            appState.deliveryCharge = loc.charge;
+            if (loc.charge > 0) {
+                textEl.innerHTML = `🚚 Delivery Charge: ₱${loc.charge.toFixed(2)}`;
+            } else {
+                textEl.innerHTML = `✅ Free Delivery`;
+            }
+        }
+    } else {
+        textEl.innerHTML = '';
+    }
+    updateCartDisplay();
+}
+
+function finalizeOrder() {
+    const customerName = document.getElementById('customer-name').value;
+    if (!customerName) {
+        alert("Please enter your name.");
+        return;
+    }
+
+    const receiptNumber = `TRKY-${Date.now().toString().slice(-6)}`;
+    const subtotal = appState.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const discount = calculateDiscount(appState.cart);
+
+    const newOrder = {
+        receiptNumber,
+        customerName,
+        orderType: appState.orderType,
+        items: JSON.parse(JSON.stringify(appState.cart)), // Deep copy
+        subtotal: subtotal,
+        discount: discount,
+        deliveryCharge: appState.orderType === 'Delivery' ? appState.deliveryCharge : 0,
+        paymentMode: document.getElementById('payment-mode').value,
+        timestamp: new Date(),
+        status: 'Pending',
+        hotSauce: document.getElementById('hot-sauce').checked,
+        hotSauceNotes: document.getElementById('hot-sauce-notes').value,
+    };
+
+    if (appState.orderType === 'Delivery') {
+        newOrder.location = `${document.getElementById('location').value}, ${document.getElementById('municipality').value}`;
+        newOrder.landmark = document.getElementById('landmark').value;
+    }
+    if (appState.orderType === 'Pick-Up') {
+        newOrder.pickupTime = document.getElementById('pickup-time').value;
+    }
+    
+    newOrder.totalAmount = newOrder.subtotal - newOrder.discount + newOrder.deliveryCharge;
+
+    appState.allOrders.unshift(newOrder); // Add to beginning of array
+    showReceiptModal(newOrder);
+    notifyAdminOfNewOrder(newOrder);
+}
+
+function showReceiptModal(order) {
+    const contentEl = document.getElementById('receipt-content');
+    let itemsHTML = '';
+    order.items.forEach(item => {
+        itemsHTML += `<p>${item.quantity}x ${item.name} <span class="float-right">₱${(item.price * item.quantity).toFixed(2)}</span></p>`;
+    });
+
+    contentEl.innerHTML = `
+        <h3 class="text-2xl font-japanese text-center mb-4 text-golden">Receipt #${order.receiptNumber}</h3>
+        <p><strong>Name:</strong> ${order.customerName}</p>
+        <p><strong>Type:</strong> ${order.orderType}</p>
+        ${order.orderType === 'Delivery' ? `<p><strong>Location:</strong> ${order.location}</p>` : ''}
+        ${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}
+        <hr class="my-2 border-golden border-dashed">
+        ${itemsHTML}
+        <hr class="my-2 border-golden border-dashed">
+        <div class="text-right space-y-1">
+            <p>Subtotal: <span>₱${order.subtotal.toFixed(2)}</span></p>
+            ${order.discount > 0 ? `<p class="text-green-400">Combo Discount: <span>- ₱${order.discount.toFixed(2)}</span></p>` : ''}
+            <p>Delivery Fee: <span>₱${order.deliveryCharge.toFixed(2)}</span></p>
+            <p class="text-xl font-bold">Total: <span class="text-golden">₱${order.totalAmount.toFixed(2)}</span></p>
+        </div>
+        <p class="mt-4"><strong>Payment:</strong> ${order.paymentMode}</p>
+    `;
+    
+    document.getElementById('gcash-info').style.display = order.paymentMode === 'GCash' ? 'block' : 'none';
+    document.getElementById('checkout-form').classList.add('hidden');
+    document.getElementById('receiptModal').classList.remove('hidden');
+}
+
+function finishOrder() {
+    // Reset kiosk state
+    appState.cart = [];
+    appState.orderType = '';
+    appState.deliveryCharge = 0;
+    appState.kioskStep = 'order-type';
+
+    document.getElementById('receiptModal').classList.add('hidden');
+    document.getElementById('order-type-selection').classList.remove('hidden');
+    document.getElementById('back-button').classList.add('hidden');
+    document.getElementById('cart-button').classList.add('hidden');
+    document.getElementById('customer-name').value = '';
+    
+    updateCartDisplay();
+}
+
+
+// ===================================================================
+// ADMIN LOGIC
+// ===================================================================
+function handleLogin(event) {
+    event.preventDefault();
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const errorEl = document.getElementById('loginError');
+
+    if (email.toUpperCase() === 'TARAYAKI' && password === '081121') {
+        errorEl.textContent = '';
+        showView('adminDashboardView');
+        updateAdminDashboard();
+    } else {
+        errorEl.textContent = 'Incorrect email or password.';
+    }
+}
+
+function logout() {
+    document.getElementById('loginForm').reset();
+    showView('loginView');
+}
+
+function notifyAdminOfNewOrder(order) {
+    appState.newNotificationCount++;
+    const badge = document.getElementById('notification-badge');
+    badge.textContent = appState.newNotificationCount;
+    badge.classList.remove('hidden');
+
+    const sound = document.getElementById('notification-sound');
+    sound.play().catch(error => console.log("Audio play failed:", error));
+    
+    if (appState.currentView === 'adminDashboardView') {
+        updateAdminDashboard();
+    }
+
+    // Also update cashier view if it's open for real-time updates
+    if (!document.getElementById('cashierOrdersModal').classList.contains('hidden')) {
+        updateCashierOrdersView();
+    }
+}
+
+function updateAdminDashboard() {
+    // Initialize calendar if it hasn't been already
+    initializeAdminCalendar();
+
+    // Clear notification badge when admin is viewing
+    appState.newNotificationCount = 0;
+    document.getElementById('notification-badge').classList.add('hidden');
+
+    // Update sales to only include 'Done' orders
+    const today = new Date().toDateString();
+    const todaysDoneOrders = appState.allOrders.filter(o => new Date(o.timestamp).toDateString() === today && o.status === 'Done');
+    const totalSales = todaysDoneOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+    document.getElementById('total-sales-today').textContent = totalSales.toFixed(2);
+    
+    // Update orders list
+    const listContainer = document.getElementById('admin-orders-list');
+    listContainer.innerHTML = '';
+
+    if (appState.allOrders.length === 0) {
+        listContainer.innerHTML = '<p class="text-center text-gray-400">No orders yet.</p>';
+        return;
+    }
+
+    appState.allOrders.forEach(order => {
+        const orderTime = new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const typeIcons = {
+            'Dine-In': 'fa-utensils',
+            'Pick-Up': 'fa-shopping-bag',
+            'Delivery': 'fa-motorcycle'
+        };
+
+        const statusColors = {
+            'Pending': 'bg-yellow-500',
+            'Preparing': 'bg-blue-500',
+            'Done': 'bg-green-500',
+        };
+
+        const orderCard = `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <div class="flex-1 text-center md:text-left">
+                    <p class="text-lg font-bold text-golden">#${order.receiptNumber}</p>
+                    <p class="text-gray-300">${order.customerName}</p>
+                </div>
+                <div class="flex-1 text-center">
+                    <p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p>
+                    <p class="text-gray-400">${orderTime}</p>
+                </div>
+                <div class="flex-1 text-center">
+                    <p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p>
+                </div>
+                <div class="flex-1 flex justify-center items-center space-x-2">
+                    <select onchange="updateOrderStatus('${order.receiptNumber}', this.value)" class="bg-black border border-golden rounded p-2 text-white">
+                        <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
+                        <option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option>
+                    </select>
+                </div>
+                <div class="flex-1 flex justify-end space-x-2">
+                    <button onclick="showAdminReceipt('${order.receiptNumber}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button>
+                    <button onclick="deleteOrder('${order.receiptNumber}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `;
+        listContainer.innerHTML += orderCard;
+    });
+
+    // Populate calendar with sales data
+    populateCalendarWithSales();
+}
+
+function updateOrderStatus(receiptNumber, newStatus) {
+    const order = appState.allOrders.find(o => o.receiptNumber === receiptNumber);
+    if (order) {
+        order.status = newStatus;
+        // In a real app, this would save to a database.
+    }
+    // Immediately refresh admin dashboard to update sales total if it's the current view
+    if (appState.currentView === 'adminDashboardView') {
+        updateAdminDashboard();
+    }
+}
+
+function showAdminReceipt(receiptNumber) {
+    const order = appState.allOrders.find(o => o.receiptNumber === receiptNumber);
+    if (!order) return;
+    
+    const modalContent = document.getElementById('admin-receipt-content');
+    let itemsHTML = '';
+    order.items.forEach(item => {
+        itemsHTML += `<p>${item.quantity}x ${item.name} <span class="float-right">₱${(item.price * item.quantity).toFixed(2)}</span></p>`;
+    });
+
+    modalContent.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+             <h2 class="text-2xl font-japanese text-golden">Order #${order.receiptNumber}</h2>
+        </div>
+        <div class="bg-black p-4 rounded-lg border border-golden space-y-2">
+            <p><strong>Customer:</strong> ${order.customerName}</p>
+            <p><strong>Time:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
+            <p><strong>Type:</strong> ${order.orderType}</p>
+            ${order.orderType === 'Delivery' ? `<p><strong>Address:</strong> ${order.location} (${order.landmark})</p>` : ''}
+            ${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}
+            <p><strong>Payment:</strong> ${order.paymentMode}</p>
+            ${order.hotSauce ? `<p><strong>Hot Sauce:</strong> Yes (${order.hotSauceNotes || 'No notes'})</p>` : '<p><strong>Hot Sauce:</strong> No</p>'}
+             <hr class="my-2 border-golden border-dashed">
+            ${itemsHTML}
+             <hr class="my-2 border-golden border-dashed">
+            <div class="text-right space-y-1">
+                <p>Subtotal: <span class="float-right">₱${order.subtotal.toFixed(2)}</span></p>
+                ${order.discount > 0 ? `<p class="text-green-400">Discount: <span class="float-right">- ₱${order.discount.toFixed(2)}</span></p>` : ''}
+                <p>Delivery: <span class="float-right">₱${order.deliveryCharge.toFixed(2)}</span></p>
+                <p class="text-xl font-bold">Total: <span class="text-golden float-right">₱${order.totalAmount.toFixed(2)}</span></p>
+            </div>
+        </div>
+    `;
+    document.getElementById('adminReceiptModal').classList.remove('hidden');
+}
+
+function closeAdminReceipt() {
+    document.getElementById('adminReceiptModal').classList.add('hidden');
+}
+
+
+// ===================================================================
+// CASHIER ORDER VIEW
+// ===================================================================
+function showCashierOrdersModal() {
+    updateCashierOrdersView();
+    document.getElementById('cashierOrdersModal').classList.remove('hidden');
+}
+
+function closeCashierOrdersModal() {
+    document.getElementById('cashierOrdersModal').classList.add('hidden');
+}
+
+function updateCashierOrdersView() {
+    const listContainer = document.getElementById('cashier-orders-list');
+    listContainer.innerHTML = '';
+
+    if (appState.allOrders.length === 0) {
+        listContainer.innerHTML = '<p class="text-center text-gray-400">No orders yet.</p>';
+        return;
+    }
+
+    appState.allOrders.forEach(order => {
+        const orderTime = new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const typeIcons = {
+            'Dine-In': 'fa-utensils',
+            'Pick-Up': 'fa-shopping-bag',
+            'Delivery': 'fa-motorcycle'
+        };
+
+        const orderCard = `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+                <div class="flex-1 text-center md:text-left">
+                    <p class="text-lg font-bold text-golden">#${order.receiptNumber}</p>
+                    <p class="text-gray-300">${order.customerName}</p>
+                </div>
+                <div class="flex-1 text-center">
+                    <p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p>
+                    <p class="text-gray-400">${orderTime}</p>
+                </div>
+                <div class="flex-1 text-center">
+                    <p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p>
+                </div>
+                <div class="flex-1 flex justify-center items-center space-x-2">
+                    <select onchange="updateOrderStatus('${order.receiptNumber}', this.value)" class="bg-black border border-golden rounded p-2 text-white">
+                        <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        <option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
+                        <option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option>
+                    </select>
+                </div>
+                <div class="flex-1 flex justify-end space-x-2">
+                    <button onclick="showAdminReceipt('${order.receiptNumber}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button>
+                    <button onclick="deleteOrder('${order.receiptNumber}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        `;
+        listContainer.innerHTML += orderCard;
+    });
+}
+
+
+// ===================================================================
+// SALES HISTORY, EXPORT & CALENDAR
+// ===================================================================
+function initializeAdminCalendar() {
+    if (!window.Calendar || calendarInstance) return; // Library not loaded or already initialized
+    
+    const calendarEl = document.getElementById('admin-calendar');
+    if (!calendarEl) return;
+
+    calendarInstance = new Calendar(calendarEl, {
+        onSelect: (data) => {
+            const selectedDate = new Date(data.date).toISOString().split('T')[0];
+            showSalesForDate(selectedDate);
+        },
+    });
+
+    // Re-populate sales data when the user changes the month
+    calendarEl.addEventListener('vjc-month-change', () => {
+         setTimeout(populateCalendarWithSales, 100);
+    });
+}
+
+function populateCalendarWithSales() {
+    if (!calendarInstance) return;
+
+    const salesByDate = appState.allOrders
+        .filter(order => order.status === 'Done') // Only count 'Done' orders for sales
+        .reduce((acc, order) => {
+            const date = new Date(order.timestamp).toISOString().split('T')[0];
+            if (!acc[date]) {
+                acc[date] = 0;
+            }
+            acc[date] += order.totalAmount;
+            return acc;
+    }, {});
+
+    const dateElements = document.querySelectorAll('.vjc-date:not(.vjc-date--disabled)');
+    dateElements.forEach(el => {
+        const dateStr = el.dataset.date;
+        const contentWrapper = el.querySelector('.vjc-date-content') || el;
+        
+        const existingSaleEl = contentWrapper.querySelector('.vjc-day-sale');
+        if (existingSaleEl) {
+            existingSaleEl.remove();
+        }
+
+        if (salesByDate[dateStr]) {
+             const saleAmount = salesByDate[dateStr];
+             const saleEl = document.createElement('span');
+             saleEl.className = 'vjc-day-sale';
+             saleEl.textContent = `₱${Math.round(saleAmount)}`;
+             contentWrapper.appendChild(saleEl);
+        }
+    });
+}
+
+function showSalesForDate(dateStr) {
+    document.getElementById('sales-start-date').value = dateStr;
+    document.getElementById('sales-end-date').value = dateStr;
+    generateSalesReport();
+    document.getElementById('salesHistoryModal').classList.remove('hidden');
+}
+
+function toggleSalesHistory() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('sales-start-date').value = today;
+    document.getElementById('sales-end-date').value = today;
+    generateSalesReport();
+    document.getElementById('salesHistoryModal').classList.remove('hidden');
+}
+
+function closeSalesHistory() {
+    document.getElementById('salesHistoryModal').classList.add('hidden');
+}
+
+function generateSalesReport() {
+    const startDate = new Date(document.getElementById('sales-start-date').value);
+    startDate.setHours(0,0,0,0);
+    const endDate = new Date(document.getElementById('sales-end-date').value);
+    endDate.setHours(23,59,59,999);
+
+    const filteredOrders = appState.allOrders.filter(o => {
+        const orderDate = new Date(o.timestamp);
+        return orderDate >= startDate && orderDate <= endDate;
+    });
+
+    const totalSales = filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
+    document.getElementById('sales-history-total').textContent = `₱${totalSales.toFixed(2)}`;
+    
+    const listEl = document.getElementById('sales-history-list');
+    listEl.innerHTML = '';
+    if (filteredOrders.length === 0) {
+        listEl.innerHTML = '<p class="text-gray-400 text-center">No sales in this period.</p>';
+        return;
+    }
+
+    filteredOrders.forEach(order => {
+        listEl.innerHTML += `
+            <div class="flex justify-between items-center p-2 bg-gray-800 rounded">
+                <div>
+                    <p class="text-golden">#${order.receiptNumber} (${order.customerName})</p>
+                    <p class="text-xs text-gray-400">${new Date(order.timestamp).toLocaleString()}</p>
+                </div>
+                <p class="font-bold text-lg">₱${order.totalAmount.toFixed(2)}</p>
+            </div>
+        `;
+    });
+}
+
+function exportSalesToCSV() {
+    const startDate = new Date(document.getElementById('sales-start-date').value);
+    startDate.setHours(0,0,0,0);
+    const endDate = new Date(document.getElementById('sales-end-date').value);
+    endDate.setHours(23,59,59,999);
+
+    const filteredOrders = appState.allOrders.filter(o => {
+        const orderDate = new Date(o.timestamp);
+        return orderDate >= startDate && orderDate <= endDate;
+    });
+
+    if (filteredOrders.length === 0) {
+        alert("No sales data to export for the selected period.");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Receipt Number,Date,Time,Customer,Type,Status,Subtotal,Discount,Delivery,Total,Payment,Items\n";
+
+    filteredOrders.forEach(order => {
+        const orderDate = new Date(order.timestamp);
+        const date = orderDate.toLocaleDateString();
+        const time = orderDate.toLocaleTimeString();
+        const items = order.items.map(i => `${i.quantity}x ${i.name}`).join('; ');
+        
+        let row = [
+            order.receiptNumber,
+            date,
+            time,
+            order.customerName,
+            order.orderType,
+            order.status,
+            order.subtotal,
+            order.discount,
+            order.deliveryCharge,
+            order.totalAmount,
+            order.paymentMode,
+            `"${items}"` // Enclose items in quotes to handle commas
+        ].join(',');
+        csvContent += row + "\r\n";
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    const fileName = `TARAYAKI_Sales_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv`;
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// ===================================================================
+// PRINT & EXPORT LOGIC
+// ===================================================================
+function printReceipt(elementId, isCustomerReceipt = false) {
+    const printArea = document.getElementById('print-area');
+    let contentToPrint = '';
+    let orderToPrint;
+
+    if (isCustomerReceipt) {
+        // For customer receipt, it's always the most recent order
+        orderToPrint = appState.allOrders[0];
+    } else {
+        // For admin, find the specific order being viewed
+        const adminReceiptWrapper = document.getElementById(elementId);
+        const receiptNumberText = adminReceiptWrapper.querySelector('h2').textContent.replace('Order #', '');
+        orderToPrint = appState.allOrders.find(o => o.receiptNumber === receiptNumberText);
+    }
+    
+    if (orderToPrint) {
+        let itemsHTML = '';
+        orderToPrint.items.forEach(item => {
+            itemsHTML += `
+                <tr>
+                    <td class="item-col">${item.name}</td>
+                    <td class="qty-col">${item.quantity}</td>
+                    <td class="price-col">P${(item.price * item.quantity).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+
+        contentToPrint = `
+            <div class="print-header">
+                <h1>TARAYAKI</h1>
+                <p>Tara, Takoyaki!</p>
+                <p>${new Date(orderToPrint.timestamp).toLocaleString()}</p>
+                <hr class="print-hr">
+                <p>Receipt #${orderToPrint.receiptNumber}</p>
+                <p>Customer: ${orderToPrint.customerName}</p>
+                ${isCustomerReceipt ? '' : `<p>Status: ${orderToPrint.status}</p>`}
+            </div>
+            <table class="print-table">
+                <thead><tr><th class="item-col">Item</th><th class="qty-col">Qty</th><th class="price-col">Price</th></tr></thead>
+                <tbody>${itemsHTML}</tbody>
+            </table>
+            <hr class="print-hr">
+            <div class="print-totals">
+                <p>Subtotal: P${orderToPrint.subtotal.toFixed(2)}</p>
+                ${orderToPrint.discount > 0 ? `<p>Discount: -P${orderToPrint.discount.toFixed(2)}</p>` : ''}
+                <p>Delivery: P${orderToPrint.deliveryCharge.toFixed(2)}</p>
+                <p class="total">TOTAL: P${orderToPrint.totalAmount.toFixed(2)}</p>
+            </div>
+            <p style="text-align: center; margin-top: 20px;">Thank you for your order!</p>
+        `;
+    }
+    
+    if (contentToPrint) {
+        printArea.innerHTML = contentToPrint;
+        window.print();
+        printArea.innerHTML = ''; // Clear after printing
+    }
+}
+
+
+// ===================================================================
+// DELETE ORDER LOGIC
+// ===================================================================
+function deleteOrder(receiptNumber) {
+    const order = appState.allOrders.find(o => o.receiptNumber === receiptNumber);
+    if (!order) return;
+    const detailsEl = document.getElementById('delete-confirm-details');
+    detailsEl.innerHTML = `
+        <p><strong>Receipt:</strong> <span class="text-golden">#${order.receiptNumber}</span></p>
+        <p><strong>Customer:</strong> ${order.customerName}</p>
+        <p><strong>Total:</strong> ₱${order.totalAmount.toFixed(2)}</p>
+    `;
+    document.getElementById('confirm-delete-btn').dataset.receiptNumber = receiptNumber;
+    document.getElementById('deleteConfirmModal').classList.remove('hidden');
+}
+
+function closeDeleteConfirmModal() {
+    document.getElementById('deleteConfirmModal').classList.add('hidden');
+}
+
+function confirmDelete() {
+    const receiptNumber = document.getElementById('confirm-delete-btn').dataset.receiptNumber;
+    appState.allOrders = appState.allOrders.filter(o => o.receiptNumber !== receiptNumber);
+    closeDeleteConfirmModal();
+
+    // Refresh views
+    if (appState.currentView === 'adminDashboardView') {
+        updateAdminDashboard();
+    }
+    if (!document.getElementById('cashierOrdersModal').classList.contains('hidden')) {
+        updateCashierOrdersView();
+    }
+}
+</script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => {
+                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                })
+                .catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+        });
+    }
+</script>
+</body>
+</html>
+
