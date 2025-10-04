@@ -23,6 +23,11 @@
     <!-- Vanilla JS Calendar -->
     <link href="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.2.0/build/vanilla-js-calendar.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.2.0/build/vanilla-js-calendar.min.js"></script>
+    
+    <!-- NEW: Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 
     <style>
         /* Custom styles to implement the theme */
@@ -506,7 +511,7 @@
             <div id="gcash-info" class="hidden mt-6 text-center">
                 <h3 class="text-2xl font-japanese text-golden">GCash Payment</h3>
                 <p>Scan the QR code or use the number below.</p>
-                <img src="https://i.imgur.com/8h2n3rS.png" alt="GCash QR Code" class="mx-auto my-4 w-48 h-48 border-2 border-golden rounded-lg">
+                <img src="https://i.imgur.com/Al8pP9W.jpg" alt="GCash QR Code" class="mx-auto my-4 w-64 h-auto border-2 border-golden rounded-lg">
                 <p class="text-2xl font-bold text-golden">0976 579 6838</p>
             </div>
             <div class="flex justify-center space-x-4 mt-8">
@@ -585,1001 +590,519 @@
 
 <script>
 // ===================================================================
+// NEW: FIREBASE SETUP
+// ===================================================================
+
+// =================================================================================
+// YOUR FIREBASE CONFIGURATION IS PASTED HERE
+// =================================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyBjFnnYfzfOgdxnZhpHXZWHyEIapOeL2g8",
+  authDomain: "tarayaki-kiosk.firebaseapp.com",
+  projectId: "tarayaki-kiosk",
+  storageBucket: "tarayaki-kiosk.firebasestorage.app",
+  messagingSenderId: "904916364809",
+  appId: "1:904916364809:web:e08b9ff4f20d56210d52d8",
+  measurementId: "G-SPEEB9TNGK"
+};
+
+// Initialize variables for Firebase services
+let db;
+let auth;
+
+// ===================================================================
 // INITIALIZATION & STATE
 // ===================================================================
 const menu = {
-    solo: [
-        { id: 's1', name: 'Cheeseyaki', price: 45 },
-        { id: 's2', name: 'Hamyaki', price: 49 },
-        { id: 's3', name: 'Crabyaki', price: 49 },
-        { id: 's4', name: 'Takoyaki (octobits)', price: 49 },
-        { id: 's5', name: 'Assorted', price: 54 },
-    ],
-    duo: [
-        { id: 'd1', name: 'Cheeseyaki', price: 85 },
-        { id: 'd2', name: 'Hamyaki', price: 89 },
-        { id: 'd3', name: 'Crabyaki', price: 89 },
-        { id: 'd4', name: 'Takoyaki (octobits)', price: 89 },
-        { id: 'd5', name: 'Assorted', price: 94 },
-    ],
-    supreme: [
-        { id: 'p1', name: 'Cheeseyaki', price: 125 },
-        { id: 'p2', name: 'Hamyaki', price: 129 },
-        { id: 'p3', name: 'Crabyaki', price: 129 },
-        { id: 'p4', name: 'Takoyaki (octobits)', price: 129 },
-        { id: 'p5', name: 'Assorted', price: 134 },
-    ],
-    others: [
-        { id: 'o1', name: 'Fruit Soda (Blueberry)', type: 'drink', price: 39 },
-        { id: 'o2', name: 'Fruit Soda (Green Apple)', type: 'drink', price: 39 },
-        { id: 'o3', name: 'Fruit Soda (Wintermelon)', type: 'drink', price: 39 },
-        { id: 'o4', name: 'Fruit Soda (Strawberry)', type: 'drink', price: 39 },
-        { id: 'o5', name: 'Fruit Soda (Bluelemonade)', type: 'drink', price: 39 },
-        { id: 'o6', name: 'Fruit Soda (Four Season)', type: 'drink', price: 39 },
-        { id: 'o7', name: 'Fruit Soda (Lychee)', type: 'drink', price: 39 },
-        { id: 'o8', name: 'Coke in Can', type: 'drink', price: 40 },
-        { id: 'o9', name: 'Sprite in Can', type: 'drink', price: 40 },
-        { id: 'o10', name: 'Royal in Can', type: 'drink', price: 40 },
-        { id: 'o11', name: 'Mountain Dew in Can', type: 'drink', price: 40 },
-        { id: 'o12', name: 'Pepsi in Can', type: 'drink', price: 40 },
-        { id: 'o13', name: 'Water', type: 'drink', price: 15 },
-        { id: 'o14', name: 'Polvoron', type: 'dessert', price: 10 },
-        { id: 'o15', name: 'Pastillas', type: 'dessert', price: 5 },
-    ]
+    solo: [ { id: 's1', name: 'Cheeseyaki', price: 45 }, { id: 's2', name: 'Hamyaki', price: 49 }, { id: 's3', name: 'Crabyaki', price: 49 }, { id: 's4', name: 'Takoyaki (octobits)', price: 49 }, { id: 's5', name: 'Assorted', price: 54 }, ],
+    duo: [ { id: 'd1', name: 'Cheeseyaki', price: 85 }, { id: 'd2', name: 'Hamyaki', price: 89 }, { id: 'd3', name: 'Crabyaki', price: 89 }, { id: 'd4', name: 'Takoyaki (octobits)', price: 89 }, { id: 'd5', name: 'Assorted', price: 94 }, ],
+    supreme: [ { id: 'p1', name: 'Cheeseyaki', price: 125 }, { id: 'p2', name: 'Hamyaki', price: 129 }, { id: 'p3', name: 'Crabyaki', price: 129 }, { id: 'p4', name: 'Takoyaki (octobits)', price: 129 }, { id: 'p5', name: 'Assorted', price: 134 }, ],
+    others: [ { id: 'o1', name: 'Fruit Soda (Blueberry)', type: 'drink', price: 39 }, { id: 'o2', name: 'Fruit Soda (Green Apple)', type: 'drink', price: 39 }, { id: 'o3', name: 'Fruit Soda (Wintermelon)', type: 'drink', price: 39 }, { id: 'o4', name: 'Fruit Soda (Strawberry)', type: 'drink', price: 39 }, { id: 'o5', name: 'Fruit Soda (Bluelemonade)', type: 'drink', price: 39 }, { id: 'o6', name: 'Fruit Soda (Four Season)', type: 'drink', price: 39 }, { id: 'o7', name: 'Fruit Soda (Lychee)', type: 'drink', price: 39 }, { id: 'o8', name: 'Coke in Can', type: 'drink', price: 40 }, { id: 'o9', name: 'Sprite in Can', type: 'drink', price: 40 }, { id: 'o10', name: 'Royal in Can', type: 'drink', price: 40 }, { id: 'o11', name: 'Mountain Dew in Can', type: 'drink', price: 40 }, { id: 'o12', name: 'Pepsi in Can', type: 'drink', price: 40 }, { id: 'o13', name: 'Water', type: 'drink', price: 15 }, { id: 'o14', name: 'Polvoron', type: 'dessert', price: 10 }, { id: 'o15', name: 'Pastillas', type: 'dessert', price: 5 }, ]
 };
-
-const locations = {
-    Bobon: [
-        { name: "Magsaysay", charge: 0 },
-        { name: "Sitio, Balud (Magsaysay)", charge: 10 },
-        { name: "Sta. Clara", charge: 0 },
-        { name: "San Juan", charge: 0 },
-        { name: "Gen. Lucban", charge: 0 },
-        { name: "Baybay", charge: 0 },
-        { name: "Salvacion", charge: 0 },
-        { name: "Feeder Road (Salvacion)", charge: 0 },
-        { name: "Sitio Balucawe (Salvacion)", charge: 10 },
-        { name: "Balat Balud", charge: 15 },
-        { name: "San Isidro", charge: 10 },
-        { name: "Dancalan", charge: 20 },
-    ],
-    "San Jose": [
-        { name: "Geratag", charge: 25 },
-        { name: "Aguadahan", charge: 35 },
-        { name: "Layuhan", charge: 40 },
-        { name: "North", charge: 40 },
-        { name: "West", charge: 40 },
-        { name: "P. Tingson", charge: 40 },
-    ],
-    Catarman: [
-        { name: "Rizal", charge: 10 },
-        { name: "Daganas", charge: 15 },
-        { name: "Dalakit", charge: 20 },
-        { name: "Bankerohan", charge: 30 },
-    ]
-};
-
-let appState = {
-    currentView: 'kioskView',
-    kioskStep: 'order-type', // 'order-type', 'menu', 'checkout'
-    orderType: '',
-    cart: [],
-    allOrders: [], // Simulates a database of all orders
-    deliveryCharge: 0,
-    newNotificationCount: 0,
-};
-
+const locations = { Bobon: [ { name: "Magsaysay", charge: 0 }, { name: "Sitio, Balud (Magsaysay)", charge: 10 }, { name: "Sta. Clara", charge: 0 }, { name: "San Juan", charge: 0 }, { name: "Gen. Lucban", charge: 0 }, { name: "Baybay", charge: 0 }, { name: "Salvacion", charge: 0 }, { name: "Feeder Road (Salvacion)", charge: 0 }, { name: "Sitio Balucawe (Salvacion)", charge: 10 }, { name: "Balat Balud", charge: 15 }, { name: "San Isidro", charge: 10 }, { name: "Dancalan", charge: 20 }, ], "San Jose": [ { name: "Geratag", charge: 25 }, { name: "Aguadahan", charge: 35 }, { name: "Layuhan", charge: 40 }, { name: "North", charge: 40 }, { name: "West", charge: 40 }, { name: "P. Tingson", charge: 40 }, ], Catarman: [ { name: "Rizal", charge: 10 }, { name: "Daganas", charge: 15 }, { name: "Dalakit", charge: 20 }, { name: "Bankerohan", charge: 30 }, ] };
+let appState = { currentView: 'kioskView', kioskStep: 'order-type', orderType: '', cart: [], allOrders: [], deliveryCharge: 0, newNotificationCount: 0, };
 let calendarInstance = null;
 
 // ===================================================================
 // DOMContentLoaded - App Startup
 // ===================================================================
 document.addEventListener('DOMContentLoaded', () => {
+    // FIX: Add a critical check for Firebase configuration.
+    if (!firebaseConfig || firebaseConfig.apiKey.includes("...")) {
+        document.body.innerHTML = `<div class="h-screen w-screen flex flex-col justify-center items-center text-center p-8">
+            <h1 class="text-4xl font-japanese text-red-500">CONFIGURATION ERROR</h1>
+            <p class="text-xl text-white mt-4">The Firebase database is not connected. Please copy your <code class="bg-gray-700 p-1 rounded">firebaseConfig</code> object from your Firebase project settings and paste it into the <code class="bg-gray-700 p-1 rounded">tarayaki-kiosk.html</code> file.</p>
+        </div>`;
+        alert("CRITICAL ERROR: Firebase is not configured. The app cannot start. Please paste your firebaseConfig object into the script.");
+        return; // Stop all further execution
+    }
+    
+    // Initialize Firebase now that config is confirmed to exist
+    try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+        auth = firebase.auth();
+        console.log("Firebase Initialized Successfully with Project ID:", firebaseConfig.projectId);
+    } catch(e) {
+        console.error("Firebase initialization error:", e);
+        alert("There was an error initializing the database. Check console for details.");
+        return;
+    }
+
     // Timer logic for the instructions modal
     const instructionsModal = document.getElementById('instructionsModal');
-    const timerEl = document.getElementById('modal-timer');
-    let timeLeft = 15;
-
-    const intervalId = setInterval(() => {
-        timeLeft--;
-        if (timerEl) timerEl.textContent = timeLeft;
-        if (timeLeft <= 0) {
-            clearInterval(intervalId);
-            // Check if modal is still open before trying to close it
-            if (!instructionsModal.classList.contains('hidden')) {
-                closeInstructionsModal();
+    if (instructionsModal) {
+        const timerEl = document.getElementById('modal-timer');
+        let timeLeft = 15;
+        const intervalId = setInterval(() => {
+            timeLeft--;
+            if (timerEl) timerEl.textContent = timeLeft;
+            if (timeLeft <= 0) {
+                clearInterval(intervalId);
+                if (!instructionsModal.classList.contains('hidden')) {
+                    closeInstructionsModal();
+                }
             }
-        }
-    }, 1000);
-
-    // Store the interval ID on the modal so it can be cleared if closed manually
-    instructionsModal.dataset.intervalId = intervalId;
+        }, 1000);
+        instructionsModal.dataset.intervalId = intervalId;
+    }
     
-    document.getElementById('hot-sauce').addEventListener('change', (e) => {
-        document.getElementById('hot-sauce-notes-container').style.display = e.target.checked ? 'block' : 'none';
-    });
+    const hotSauceCheckbox = document.getElementById('hot-sauce');
+    if(hotSauceCheckbox) {
+        hotSauceCheckbox.addEventListener('change', (e) => {
+            const notesContainer = document.getElementById('hot-sauce-notes-container');
+            if (notesContainer) {
+                notesContainer.style.display = e.target.checked ? 'block' : 'none';
+            }
+        });
+    }
+
+    // Set up a real-time listener for orders
+    try {
+        db.collection("orders").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+            let newOrdersDetected = snapshot.docChanges().some(change => change.type === 'added');
+
+            appState.allOrders = []; // Clear the local list
+            snapshot.forEach(doc => {
+                const orderData = doc.data();
+                orderData.id = doc.id; 
+                if (orderData.timestamp && typeof orderData.timestamp.toDate === 'function') {
+                    orderData.timestamp = orderData.timestamp.toDate();
+                } 
+                appState.allOrders.push(orderData);
+            });
+            
+            if(newOrdersDetected && appState.allOrders.length > 0){
+                const firstOrderTime = appState.allOrders[0].timestamp;
+                if(firstOrderTime && (new Date() - firstOrderTime < 5000)) { // within 5 seconds
+                     notifyAdminOfNewOrder();
+                }
+            }
+            
+            // Refresh views
+            if (appState.currentView === 'adminDashboardView') {
+                updateAdminDashboard();
+            }
+            const cashierModal = document.getElementById('cashierOrdersModal');
+            if (cashierModal && !cashierModal.classList.contains('hidden')) {
+                updateCashierOrdersView();
+            }
+        }, error => {
+            console.error("Error fetching orders from Firestore: ", error);
+            // FIX: Add more specific guidance for the most common error.
+            if (error.code === 'unavailable' || error.code === 'permission-denied') {
+                console.error("%cFIREBASE HINT: This connection error often means your Firestore Security Rules are too restrictive. Please go to your Firebase project -> Firestore Database -> Rules tab and ensure you have rules that allow reading and writing. For testing, you can use: `rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if true; } } }` But remember to secure this for a real application!", "color: yellow; font-size: 1.2em;");
+            }
+        });
+    } catch (e) {
+        console.error("Could not set up Firestore listener. Is firebaseConfig correct?", e)
+    }
 });
 
 // ===================================================================
-// VIEW MANAGEMENT
+// FUNCTIONS 
 // ===================================================================
-function showView(viewId) {
-    document.querySelectorAll('#app-container > div, #loginView').forEach(view => {
-        view.classList.add('hidden');
-    });
-    document.getElementById(viewId).classList.remove('hidden');
-    appState.currentView = viewId;
-    
-    // Hide/show admin and cashier icons based on view
-    const adminIcon = document.getElementById('admin-icon');
-    const cashierIcon = document.getElementById('cashier-icon');
-    if (viewId === 'kioskView') {
-        adminIcon.classList.remove('hidden');
-        cashierIcon.classList.remove('hidden');
-    } else {
-        adminIcon.classList.add('hidden');
-        cashierIcon.classList.add('hidden');
+
+function showView(viewId) { 
+    document.querySelectorAll('#app-container > div, #loginView').forEach(v => v.classList.add('hidden')); 
+    const view = document.getElementById(viewId);
+    if(view) view.classList.remove('hidden'); 
+    appState.currentView = viewId; 
+    const adminIcon = document.getElementById('admin-icon'); 
+    const cashierIcon = document.getElementById('cashier-icon'); 
+    if(adminIcon && cashierIcon){
+        if (viewId === 'kioskView') { 
+            adminIcon.classList.remove('hidden'); 
+            cashierIcon.classList.remove('hidden'); 
+        } else { 
+            adminIcon.classList.add('hidden'); 
+            cashierIcon.classList.add('hidden'); 
+        } 
     }
 }
-
-function goBack() {
-    if (appState.kioskStep === 'menu') {
-        appState.kioskStep = 'order-type';
-        document.getElementById('menu-selection').classList.add('hidden');
-        document.getElementById('order-type-selection').classList.remove('hidden');
-        document.getElementById('back-button').classList.add('hidden');
-        document.getElementById('cart-button').classList.add('hidden');
-    } else if (appState.kioskStep === 'checkout') {
-        appState.kioskStep = 'menu';
-        document.getElementById('checkout-form').classList.add('hidden');
-        document.getElementById('menu-selection').classList.remove('hidden');
-        document.getElementById('cart-button').classList.remove('hidden');
+function goBack() { 
+    if (appState.kioskStep === 'menu') { 
+        appState.kioskStep = 'order-type'; 
+        document.getElementById('menu-selection').classList.add('hidden'); 
+        document.getElementById('order-type-selection').classList.remove('hidden'); 
+        document.getElementById('back-button').classList.add('hidden'); 
+        document.getElementById('cart-button').classList.add('hidden'); 
+    } else if (appState.kioskStep === 'checkout') { 
+        appState.kioskStep = 'menu'; 
+        document.getElementById('checkout-form').classList.add('hidden'); 
+        document.getElementById('menu-selection').classList.remove('hidden'); 
+        document.getElementById('cart-button').classList.remove('hidden'); 
+    } 
+}
+function closeInstructionsModal() { 
+    const modal = document.getElementById('instructionsModal'); 
+    if(!modal) return; 
+    const intervalId = modal.dataset.intervalId; 
+    if (intervalId) { clearInterval(intervalId); } 
+    modal.classList.add('fade-out'); 
+    setTimeout(() => { modal.classList.add('hidden'); modal.classList.remove('fade-out'); }, 500); 
+}
+function selectOrderType(type) { 
+    appState.orderType = type; 
+    appState.kioskStep = 'menu'; 
+    const orderTypeSection = document.getElementById('order-type-selection'); 
+    orderTypeSection.classList.add('fade-out'); 
+    setTimeout(() => { 
+        orderTypeSection.classList.add('hidden'); 
+        orderTypeSection.classList.remove('fade-out'); 
+        const menuSection = document.getElementById('menu-selection'); 
+        menuSection.classList.remove('hidden'); 
+        menuSection.classList.add('fade-in'); 
+        document.getElementById('back-button').classList.remove('hidden'); 
+        document.getElementById('cart-button').classList.remove('hidden'); 
+        showMenuCategory('solo'); 
+    }, 500); 
+}
+function showMenuCategory(categoryKey) { 
+    const container = document.getElementById('menu-items-container'); 
+    if(!container) return;
+    container.innerHTML = ''; 
+    document.querySelectorAll('.menu-category-btn').forEach(btn => { btn.classList.remove('bg-golden', 'text-black', 'glow'); btn.classList.add('bg-dark-red', 'text-golden'); }); 
+    const activeBtn = document.querySelector(`button[onclick="showMenuCategory('${categoryKey}')"]`); 
+    if(activeBtn) { activeBtn.classList.add('bg-golden', 'text-black', 'glow'); activeBtn.classList.remove('bg-dark-red', 'text-golden'); }
+    menu[categoryKey].forEach(item => { 
+        const itemInCart = appState.cart.find(ci => ci.id === item.id); 
+        const quantity = itemInCart ? itemInCart.quantity : 0; 
+        container.innerHTML += `<div class="bg-gray-900 border-2 border-golden rounded-xl p-4 flex flex-col justify-between fade-in"><div><h4 class="text-2xl font-japanese text-golden">${item.name}</h4><p class="text-xl mb-4">₱${item.price.toFixed(2)}</p></div><div class="flex items-center justify-center space-x-4"><button onclick="updateCart('${item.id}', -1)" class="bg-dark-red text-golden rounded-full h-10 w-10 text-2xl font-bold flex items-center justify-center">-</button><span id="qty-${item.id}" class="text-2xl font-bold w-12 text-center">${quantity}</span><button onclick="updateCart('${item.id}', 1)" class="bg-dark-red text-golden rounded-full h-10 w-10 text-2xl font-bold flex items-center justify-center">+</button></div></div>`; }); 
+}
+function calculateDiscount(cart) { 
+    const hasTakoyaki = cart.some(item => ['s', 'd', 'p'].includes(item.id.charAt(0))); 
+    const hasDrink = cart.some(item => { const otherItem = menu.others.find(oi => oi.id === item.id); return otherItem && otherItem.type === 'drink'; }); 
+    return hasTakoyaki && hasDrink ? 4.00 : 0; 
+}
+function updateCart(itemId, change) { 
+    const allItems = [].concat(...Object.values(menu)); 
+    const itemDetails = allItems.find(item => item.id === itemId); 
+    let itemInCart = appState.cart.find(ci => ci.id === itemId); 
+    if (itemInCart) { itemInCart.quantity += change; if (itemInCart.quantity <= 0) { appState.cart = appState.cart.filter(ci => ci.id !== itemId); } } 
+    else if (change > 0) { appState.cart.push({ ...itemDetails, quantity: 1 }); } 
+    const qtyEl = document.getElementById(`qty-${itemId}`); 
+    if (qtyEl) { const updatedItem = appState.cart.find(ci => ci.id === itemId); qtyEl.textContent = updatedItem ? updatedItem.quantity : 0; } 
+    updateCartDisplay(); 
+}
+function updateCartDisplay() { 
+    const subtotal = appState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0); 
+    const totalItems = appState.cart.reduce((sum, item) => sum + item.quantity, 0); 
+    const discount = calculateDiscount(appState.cart); 
+    document.getElementById('cart-total-amount').textContent = `₱${(subtotal - discount).toFixed(2)}`; 
+    document.getElementById('cart-item-count').textContent = totalItems; 
+    const checkoutButton = document.getElementById('checkout-button-from-cart'); 
+    if (checkoutButton) {
+        if (totalItems > 0) { checkoutButton.disabled = false; checkoutButton.classList.remove('bg-gray-400', 'cursor-not-allowed'); checkoutButton.classList.add('bg-green-600'); } 
+        else { checkoutButton.disabled = true; checkoutButton.classList.add('bg-gray-400', 'cursor-not-allowed'); checkoutButton.classList.remove('bg-green-600'); } 
     }
 }
-
-// ===================================================================
-// INSTRUCTIONS MODAL
-// ===================================================================
-function closeInstructionsModal() {
-    const instructionsModal = document.getElementById('instructionsModal');
-    const intervalId = instructionsModal.dataset.intervalId;
-    if (intervalId) {
-        clearInterval(intervalId);
-    }
-    instructionsModal.classList.add('fade-out');
-    setTimeout(() => {
-        instructionsModal.classList.add('hidden');
-        instructionsModal.classList.remove('fade-out');
-    }, 500);
+function showCartModal() { 
+    const listEl = document.getElementById('cart-items-list'); 
+    listEl.innerHTML = ''; 
+    if (appState.cart.length === 0) { listEl.innerHTML = '<p class="text-center text-gray-400">Your cart is empty.</p>'; } 
+    else { appState.cart.forEach(item => { listEl.innerHTML += `<div class="flex justify-between items-center"><div><p class="text-lg text-golden">${item.name}</p><p class="text-sm text-gray-400">${item.quantity} x ₱${item.price.toFixed(2)}</p></div><p class="text-xl font-bold">₱${(item.quantity * item.price).toFixed(2)}</p></div>`; }); } 
+    const subtotal = appState.cart.reduce((sum, item) => sum + item.price * item.quantity, 0); 
+    const discount = calculateDiscount(appState.cart); 
+    document.getElementById('cart-subtotal').textContent = `₱${subtotal.toFixed(2)}`; 
+    const discountRow = document.getElementById('cart-discount-row'); 
+    if (discount > 0) { document.getElementById('cart-discount').textContent = `- ₱${discount.toFixed(2)}`; discountRow.classList.remove('hidden'); } 
+    else { discountRow.classList.add('hidden'); } 
+    document.getElementById('cart-delivery-fee').textContent = `₱${appState.deliveryCharge.toFixed(2)}`; 
+    document.getElementById('cart-grand-total').textContent = `₱${(subtotal - discount + appState.deliveryCharge).toFixed(2)}`; 
+    document.getElementById('cartModal').classList.remove('hidden'); 
 }
-
-
-// ===================================================================
-// KIOSK ORDERING FLOW
-// ===================================================================
-function selectOrderType(type) {
-    appState.orderType = type;
-    appState.kioskStep = 'menu';
-    
-    const orderTypeSection = document.getElementById('order-type-selection');
-    orderTypeSection.classList.add('fade-out');
-    setTimeout(() => {
-        orderTypeSection.classList.add('hidden');
-        orderTypeSection.classList.remove('fade-out');
-        
-        const menuSection = document.getElementById('menu-selection');
-        menuSection.classList.remove('hidden');
-        menuSection.classList.add('fade-in');
-
-        document.getElementById('back-button').classList.remove('hidden');
-        document.getElementById('cart-button').classList.remove('hidden');
-        showMenuCategory('solo'); // Default to solo view
-    }, 500);
+function closeCartModal() { document.getElementById('cartModal').classList.add('hidden'); }
+function proceedToDrinkPrompt() { 
+    closeCartModal(); 
+    const drinksModalContainer = document.getElementById('drinks-modal-container'); 
+    drinksModalContainer.innerHTML = ''; 
+    const drinks = menu.others.filter(item => item.type === 'drink'); 
+    drinks.forEach(drink => { const itemInCart = appState.cart.find(ci => ci.id === drink.id); const quantity = itemInCart ? itemInCart.quantity : 0; drinksModalContainer.innerHTML += `<div class="flex justify-between items-center bg-gray-800 p-3 rounded-lg"><p class="text-golden">${drink.name} (₱${drink.price.toFixed(2)})</p><div class="flex items-center space-x-2"><button onclick="updateCart('${drink.id}', -1); updateDrinkModalQty('${drink.id}')" class="bg-dark-red text-golden rounded-full h-8 w-8 text-xl font-bold">-</button><span id="drink-qty-${drink.id}" class="text-lg font-bold w-8 text-center">${quantity}</span><button onclick="updateCart('${drink.id}', 1); updateDrinkModalQty('${drink.id}')" class="bg-dark-red text-golden rounded-full h-8 w-8 text-xl font-bold">+</button></div></div>`; }); 
+    document.getElementById('drinkPromptModal').classList.remove('hidden'); 
 }
-
-function showMenuCategory(categoryKey) {
-    const container = document.getElementById('menu-items-container');
-    container.innerHTML = '';
-    
-    // Style active button
-    document.querySelectorAll('.menu-category-btn').forEach(btn => {
-        btn.classList.remove('bg-golden', 'text-black', 'glow');
-        btn.classList.add('bg-dark-red', 'text-golden');
-    });
-    const activeBtn = document.querySelector(`button[onclick="showMenuCategory('${categoryKey}')"]`);
-    activeBtn.classList.add('bg-golden', 'text-black', 'glow');
-    activeBtn.classList.remove('bg-dark-red', 'text-golden');
-
-    menu[categoryKey].forEach(item => {
-        const itemInCart = appState.cart.find(cartItem => cartItem.id === item.id);
-        const quantity = itemInCart ? itemInCart.quantity : 0;
-        
-        const itemHTML = `
-            <div class="bg-gray-900 border-2 border-golden rounded-xl p-4 flex flex-col justify-between fade-in">
-                <div>
-                    <h4 class="text-2xl font-japanese text-golden">${item.name}</h4>
-                    <p class="text-xl mb-4">₱${item.price.toFixed(2)}</p>
-                </div>
-                <div class="flex items-center justify-center space-x-4">
-                    <button onclick="updateCart('${item.id}', -1)" class="bg-dark-red text-golden rounded-full h-10 w-10 text-2xl font-bold flex items-center justify-center">-</button>
-                    <span id="qty-${item.id}" class="text-2xl font-bold w-12 text-center">${quantity}</span>
-                    <button onclick="updateCart('${item.id}', 1)" class="bg-dark-red text-golden rounded-full h-10 w-10 text-2xl font-bold flex items-center justify-center">+</button>
-                </div>
-            </div>
-        `;
-        container.innerHTML += itemHTML;
-    });
+function updateDrinkModalQty(itemId) { 
+    const itemInCart = appState.cart.find(item => item.id === itemId); 
+    const qtyEl = document.getElementById(`drink-qty-${itemId}`);
+    if(qtyEl) qtyEl.textContent = itemInCart ? itemInCart.quantity : 0; 
 }
-
-// ===================================================================
-// CART MANAGEMENT & DISCOUNT LOGIC
-// ===================================================================
-function calculateDiscount(cart) {
-    const hasTakoyaki = cart.some(item => ['s', 'd', 'p'].includes(item.id.charAt(0)));
-    const hasDrink = cart.some(item => {
-        const otherItem = menu.others.find(oi => oi.id === item.id);
-        return otherItem && otherItem.type === 'drink';
-    });
-
-    return hasTakoyaki && hasDrink ? 4.00 : 0;
+function proceedToCheckoutForm() { 
+    document.getElementById('drinkPromptModal').classList.add('hidden'); 
+    appState.kioskStep = 'checkout'; 
+    document.getElementById('menu-selection').classList.add('hidden'); 
+    document.getElementById('cart-button').classList.add('hidden'); 
+    const checkoutForm = document.getElementById('checkout-form'); 
+    checkoutForm.classList.remove('hidden'); 
+    checkoutForm.classList.add('fade-in'); 
+    document.getElementById('delivery-fields').style.display = appState.orderType === 'Delivery' ? 'block' : 'none'; 
+    document.getElementById('pickup-fields').style.display = appState.orderType === 'Pick-Up' ? 'block' : 'none'; 
+    if (appState.orderType === 'Delivery') { updateLocations(); } 
 }
-
-function updateCart(itemId, change) {
-    const allItems = [].concat(...Object.values(menu));
-    const itemDetails = allItems.find(item => item.id === itemId);
-    
-    let itemInCart = appState.cart.find(cartItem => cartItem.id === itemId);
-
-    if (itemInCart) {
-        itemInCart.quantity += change;
-        if (itemInCart.quantity <= 0) {
-            appState.cart = appState.cart.filter(cartItem => cartItem.id !== itemId);
+function updateLocations() { 
+    const municipality = document.getElementById('municipality').value; 
+    const locationSelect = document.getElementById('location'); 
+    locationSelect.innerHTML = '<option value="">Select Location</option>'; 
+    if (locations[municipality]) { locations[municipality].forEach(loc => { locationSelect.innerHTML += `<option value="${loc.name}">${loc.name}</option>`; }); } 
+    updateDeliveryCharge(); 
+}
+function updateDeliveryCharge() { 
+    const municipality = document.getElementById('municipality').value; 
+    const locationName = document.getElementById('location').value; 
+    const textEl = document.getElementById('delivery-charge-text'); 
+    appState.deliveryCharge = 0; 
+    if (municipality && locationName && locations[municipality]) { 
+        const loc = locations[municipality].find(l => l.name === locationName); 
+        if (loc) { 
+            appState.deliveryCharge = loc.charge; 
+            textEl.innerHTML = loc.charge > 0 ? `🚚 Delivery Charge: ₱${loc.charge.toFixed(2)}` : `✅ Free Delivery`; 
+        } 
+    } else if(textEl) { textEl.innerHTML = ''; } 
+    updateCartDisplay(); 
+}
+function showReceiptModal(order) { 
+    const contentEl = document.getElementById('receipt-content'); 
+    let itemsHTML = ''; 
+    order.items.forEach(item => { itemsHTML += `<p>${item.quantity}x ${item.name} <span class="float-right">₱${(item.price * item.quantity).toFixed(2)}</span></p>`; }); 
+    contentEl.innerHTML = `<h3 class="text-2xl font-japanese text-center mb-4 text-golden">Receipt #${order.receiptNumber}</h3><p><strong>Name:</strong> ${order.customerName}</p><p><strong>Type:</strong> ${order.orderType}</p>${order.orderType === 'Delivery' ? `<p><strong>Location:</strong> ${order.location}</p>` : ''}${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}<hr class="my-2 border-golden border-dashed">${itemsHTML}<hr class="my-2 border-golden border-dashed"><div class="text-right space-y-1"><p>Subtotal: <span>₱${order.subtotal.toFixed(2)}</span></p>${order.discount > 0 ? `<p class="text-green-400">Combo Discount: <span>- ₱${order.discount.toFixed(2)}</span></p>` : ''}<p>Delivery Fee: <span>₱${order.deliveryCharge.toFixed(2)}</span></p><p class="text-xl font-bold">Total: <span class="text-golden">₱${order.totalAmount.toFixed(2)}</span></p></div><p class="mt-4"><strong>Payment:</strong> ${order.paymentMode}</p>`; 
+    document.getElementById('gcash-info').style.display = order.paymentMode === 'GCash' ? 'block' : 'none'; 
+    document.getElementById('checkout-form').classList.add('hidden'); 
+    document.getElementById('receiptModal').classList.remove('hidden'); 
+}
+function finishOrder() { 
+    appState.cart = []; appState.orderType = ''; appState.deliveryCharge = 0; appState.kioskStep = 'order-type'; 
+    document.getElementById('receiptModal').classList.add('hidden'); 
+    document.getElementById('order-type-selection').classList.remove('hidden'); 
+    document.getElementById('back-button').classList.add('hidden'); 
+    document.getElementById('cart-button').classList.add('hidden'); 
+    document.getElementById('customer-name').value = ''; 
+    updateCartDisplay(); 
+}
+function handleLogin(event) { 
+    event.preventDefault(); 
+    const email = document.getElementById('email').value.trim(); 
+    const password = document.getElementById('password').value; 
+    const errorEl = document.getElementById('loginError'); 
+    if (email.toUpperCase() === 'TARAYAKI' && password === '081121') { 
+        if(errorEl) errorEl.textContent = ''; 
+        showView('adminDashboardView'); 
+        updateAdminDashboard(); 
+    } else { 
+        if(errorEl) errorEl.textContent = 'Incorrect email or password.'; 
+    } 
+}
+function logout() { 
+    const form = document.getElementById('loginForm');
+    if(form) form.reset(); 
+    showView('kioskView'); 
+}
+function notifyAdminOfNewOrder() { 
+    appState.newNotificationCount++; 
+    const badge = document.getElementById('notification-badge'); 
+    if(badge) { badge.textContent = appState.newNotificationCount; badge.classList.remove('hidden'); } 
+    const sound = document.getElementById('notification-sound'); 
+    if(sound) sound.play().catch(e => console.log("Audio play failed:", e)); 
+}
+function updateAdminDashboard() { 
+    initializeAdminCalendar(); 
+    appState.newNotificationCount = 0; 
+    const badge = document.getElementById('notification-badge'); 
+    if(badge) badge.classList.add('hidden'); 
+    const today = new Date().toDateString(); 
+    const todaysDoneOrders = appState.allOrders.filter(o => o.timestamp && new Date(o.timestamp).toDateString() === today && o.status === 'Done'); 
+    const totalSales = todaysDoneOrders.reduce((sum, o) => sum + o.totalAmount, 0); 
+    const salesEl = document.getElementById('total-sales-today');
+    if(salesEl) salesEl.textContent = totalSales.toFixed(2); 
+    const listContainer = document.getElementById('admin-orders-list'); 
+    if(!listContainer) return;
+    listContainer.innerHTML = ''; 
+    if (appState.allOrders.length === 0) { listContainer.innerHTML = '<p class="text-center text-gray-400">No orders yet.</p>'; return; } 
+    appState.allOrders.forEach(order => { 
+        const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'; 
+        const typeIcons = { 'Dine-In': 'fa-utensils', 'Pick-Up': 'fa-shopping-bag', 'Delivery': 'fa-motorcycle' }; 
+        listContainer.innerHTML += `<div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0"><div class="flex-1 text-center md:text-left"><p class="text-lg font-bold text-golden">#${order.receiptNumber}</p><p class="text-gray-300">${order.customerName}</p></div><div class="flex-1 text-center"><p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p><p class="text-gray-400">${orderTime}</p></div><div class="flex-1 text-center"><p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p></div><div class="flex-1 flex justify-center items-center space-x-2"><select onchange="updateOrderStatus('${order.id}', this.value)" class="bg-black border border-golden rounded p-2 text-white"><option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option><option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option></select></div><div class="flex-1 flex justify-end space-x-2"><button onclick="showAdminReceipt('${order.id}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button><button onclick="deleteOrder('${order.id}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button></div></div>`; 
+    }); 
+    populateCalendarWithSales(); 
+}
+function showAdminReceipt(orderId) { 
+    const order = appState.allOrders.find(o => o.id === orderId); 
+    if (!order) return; 
+    const modalContent = document.getElementById('admin-receipt-content'); 
+    if(!modalContent) return;
+    let itemsHTML = ''; 
+    order.items.forEach(item => { itemsHTML += `<p>${item.quantity}x ${item.name} <span class="float-right">₱${(item.price * item.quantity).toFixed(2)}</span></p>`; }); 
+    modalContent.innerHTML = `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-japanese text-golden">Order #${order.receiptNumber}</h2></div><div class="bg-black p-4 rounded-lg border border-golden space-y-2"><p><strong>Customer:</strong> ${order.customerName}</p><p><strong>Time:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : 'N/A'}</p><p><strong>Type:</strong> ${order.orderType}</p>${order.orderType === 'Delivery' ? `<p><strong>Address:</strong> ${order.location} (${order.landmark})</p>` : ''}${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}<p><strong>Payment:</strong> ${order.paymentMode}</p>${order.hotSauce ? `<p><strong>Hot Sauce:</strong> Yes (${order.hotSauceNotes || 'No notes'})</p>` : '<p><strong>Hot Sauce:</strong> No</p>'}<hr class="my-2 border-golden border-dashed">${itemsHTML}<hr class="my-2 border-golden border-dashed"><div class="text-right space-y-1"><p>Subtotal: <span class="float-right">₱${order.subtotal.toFixed(2)}</span></p>${order.discount > 0 ? `<p class="text-green-400">Discount: <span class="float-right">- ₱${order.discount.toFixed(2)}</span></p>` : ''}<p>Delivery: <span class="float-right">₱${order.deliveryCharge.toFixed(2)}</span></p><p class="text-xl font-bold">Total: <span class="text-golden float-right">₱${order.totalAmount.toFixed(2)}</span></p></div></div>`; 
+    document.getElementById('adminReceiptModal').classList.remove('hidden'); 
+}
+function closeAdminReceipt() { document.getElementById('adminReceiptModal').classList.add('hidden'); }
+function showCashierOrdersModal() { updateCashierOrdersView(); document.getElementById('cashierOrdersModal').classList.remove('hidden'); }
+function closeCashierOrdersModal() { document.getElementById('cashierOrdersModal').classList.add('hidden'); }
+function updateCashierOrdersView() { 
+    const listContainer = document.getElementById('cashier-orders-list'); 
+    if(!listContainer) return;
+    listContainer.innerHTML = ''; 
+    if (appState.allOrders.length === 0) { listContainer.innerHTML = '<p class="text-center text-gray-400">No orders yet.</p>'; return; } 
+    appState.allOrders.forEach(order => { 
+        const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'; 
+        const typeIcons = { 'Dine-In': 'fa-utensils', 'Pick-Up': 'fa-shopping-bag', 'Delivery': 'fa-motorcycle' }; 
+        listContainer.innerHTML += `<div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0"><div class="flex-1 text-center md:text-left"><p class="text-lg font-bold text-golden">#${order.receiptNumber}</p><p class="text-gray-300">${order.customerName}</p></div><div class="flex-1 text-center"><p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p><p class="text-gray-400">${orderTime}</p></div><div class="flex-1 text-center"><p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p></div><div class="flex-1 flex justify-center items-center space-x-2"><select onchange="updateOrderStatus('${order.id}', this.value)" class="bg-black border border-golden rounded p-2 text-white"><option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option><option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option></select></div><div class="flex-1 flex justify-end space-x-2"><button onclick="showAdminReceipt('${order.id}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button><button onclick="deleteOrder('${order.id}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button></div></div>`; 
+    }); 
+}
+function initializeAdminCalendar() { 
+    if (!window.Calendar || calendarInstance) return; 
+    const calendarEl = document.getElementById('admin-calendar'); 
+    if (!calendarEl) return; 
+    calendarInstance = new Calendar(calendarEl, { onSelect: (data) => { const selectedDate = new Date(data.date).toISOString().split('T')[0]; showSalesForDate(selectedDate); }, }); 
+    calendarEl.addEventListener('vjc-month-change', () => { setTimeout(populateCalendarWithSales, 100); }); 
+}
+function populateCalendarWithSales() { 
+    if (!calendarInstance) return; 
+    const salesByDate = appState.allOrders.filter(order => order.status === 'Done' && order.timestamp).reduce((acc, order) => { const date = new Date(order.timestamp).toISOString().split('T')[0]; if (!acc[date]) { acc[date] = 0; } acc[date] += order.totalAmount; return acc; }, {}); 
+    const dateElements = document.querySelectorAll('.vjc-date:not(.vjc-date--disabled)'); 
+    dateElements.forEach(el => { const dateStr = el.dataset.date; const contentWrapper = el.querySelector('.vjc-date-content') || el; const existingSaleEl = contentWrapper.querySelector('.vjc-day-sale'); if (existingSaleEl) { existingSaleEl.remove(); } if (salesByDate[dateStr]) { const saleAmount = salesByDate[dateStr]; const saleEl = document.createElement('span'); saleEl.className = 'vjc-day-sale'; saleEl.textContent = `₱${Math.round(saleAmount)}`; contentWrapper.appendChild(saleEl); } }); 
+}
+function showSalesForDate(dateStr) { 
+    document.getElementById('sales-start-date').value = dateStr; 
+    document.getElementById('sales-end-date').value = dateStr; 
+    generateSalesReport(); 
+    document.getElementById('salesHistoryModal').classList.remove('hidden'); 
+}
+function toggleSalesHistory() { 
+    const today = new Date().toISOString().split('T')[0]; 
+    document.getElementById('sales-start-date').value = today; 
+    document.getElementById('sales-end-date').value = today; 
+    generateSalesReport(); 
+    document.getElementById('salesHistoryModal').classList.remove('hidden'); 
+}
+function closeSalesHistory() { document.getElementById('salesHistoryModal').classList.add('hidden'); }
+function generateSalesReport() { 
+    const startDate = new Date(document.getElementById('sales-start-date').value); 
+    startDate.setHours(0,0,0,0); 
+    const endDate = new Date(document.getElementById('sales-end-date').value); 
+    endDate.setHours(23,59,59,999); 
+    const filteredOrders = appState.allOrders.filter(o => o.timestamp && new Date(o.timestamp) >= startDate && new Date(o.timestamp) <= endDate); 
+    const totalSales = filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0); 
+    document.getElementById('sales-history-total').textContent = `₱${totalSales.toFixed(2)}`; 
+    const listEl = document.getElementById('sales-history-list'); 
+    listEl.innerHTML = ''; 
+    if (filteredOrders.length === 0) { listEl.innerHTML = '<p class="text-gray-400 text-center">No sales in this period.</p>'; return; } 
+    filteredOrders.forEach(order => { listEl.innerHTML += `<div class="flex justify-between items-center p-2 bg-gray-800 rounded"><div><p class="text-golden">#${order.receiptNumber} (${order.customerName})</p><p class="text-xs text-gray-400">${new Date(order.timestamp).toLocaleString()}</p></div><p class="font-bold text-lg">₱${order.totalAmount.toFixed(2)}</p></div>`; }); 
+}
+function exportSalesToCSV() { 
+    const startDate = new Date(document.getElementById('sales-start-date').value); 
+    startDate.setHours(0,0,0,0); 
+    const endDate = new Date(document.getElementById('sales-end-date').value); 
+    endDate.setHours(23,59,59,999); 
+    const filteredOrders = appState.allOrders.filter(o => o.timestamp && new Date(o.timestamp) >= startDate && new Date(o.timestamp) <= endDate); 
+    if (filteredOrders.length === 0) { alert("No sales data to export for the selected period."); return; } 
+    let csvContent = "data:text/csv;charset=utf-8,Receipt Number,Date,Time,Customer,Type,Status,Subtotal,Discount,Delivery,Total,Payment,Items\n"; 
+    filteredOrders.forEach(order => { const orderDate = new Date(order.timestamp); const date = orderDate.toLocaleDateString(); const time = orderDate.toLocaleTimeString(); const items = order.items.map(i => `${i.quantity}x ${i.name}`).join('; '); csvContent += [`"${order.receiptNumber}"`, date, time, `"${order.customerName}"`, order.orderType, order.status, order.subtotal, order.discount, order.deliveryCharge, order.totalAmount, order.paymentMode, `"${items}"`].join(',') + "\r\n"; }); 
+    const encodedUri = encodeURI(csvContent); 
+    const link = document.createElement("a"); 
+    link.setAttribute("href", encodedUri); 
+    const fileName = `TARAYAKI_Sales_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv`; 
+    link.setAttribute("download", fileName); 
+    document.body.appendChild(link); 
+    link.click(); 
+    document.body.removeChild(link); 
+}
+function printReceipt(elementId, isCustomerReceipt = false) { 
+    const printArea = document.getElementById('print-area'); 
+    let contentToPrint = ''; 
+    let orderToPrint; 
+    if (isCustomerReceipt) { 
+        orderToPrint = appState.allOrders[0]; 
+    } else { 
+        const adminReceiptWrapper = document.getElementById(elementId); 
+        const h2 = adminReceiptWrapper ? adminReceiptWrapper.querySelector('h2') : null;
+        if(h2){
+            const receiptNumberText = h2.textContent.replace('Order #', ''); 
+            orderToPrint = appState.allOrders.find(o => o.receiptNumber === receiptNumberText); 
         }
-    } else if (change > 0) {
-        appState.cart.push({ ...itemDetails, quantity: 1 });
-    }
-
-    // Update quantity display on menu
-    const qtyEl = document.getElementById(`qty-${itemId}`);
-    if (qtyEl) {
-        const updatedItem = appState.cart.find(cartItem => cartItem.id === itemId);
-        qtyEl.textContent = updatedItem ? updatedItem.quantity : 0;
-    }
-    
-    updateCartDisplay();
+    } 
+    if (orderToPrint) { 
+        let itemsHTML = ''; 
+        orderToPrint.items.forEach(item => { itemsHTML += `<tr><td class="item-col">${item.name}</td><td class="qty-col">${item.quantity}</td><td class="price-col">P${(item.price * item.quantity).toFixed(2)}</td></tr>`; }); 
+        contentToPrint = `<div class="print-header"><h1>TARAYAKI</h1><p>Tara, Takoyaki!</p><p>${new Date(orderToPrint.timestamp).toLocaleString()}</p><hr class="print-hr"><p>Receipt #${orderToPrint.receiptNumber}</p><p>Customer: ${orderToPrint.customerName}</p>${isCustomerReceipt ? '' : `<p>Status: ${orderToPrint.status}</p>`}</div><table class="print-table"><thead><tr><th class="item-col">Item</th><th class="qty-col">Qty</th><th class="price-col">Price</th></tr></thead><tbody>${itemsHTML}</tbody></table><hr class="print-hr"><div class="print-totals"><p>Subtotal: P${orderToPrint.subtotal.toFixed(2)}</p>${orderToPrint.discount > 0 ? `<p>Discount: -P${orderToPrint.discount.toFixed(2)}</p>` : ''}<p>Delivery: P${orderToPrint.deliveryCharge.toFixed(2)}</p><p class="total">TOTAL: P${orderToPrint.totalAmount.toFixed(2)}</p></div><p style="text-align: center; margin-top: 20px;">Thank you for your order!</p>`; 
+    } 
+    if (contentToPrint && printArea) { 
+        printArea.innerHTML = contentToPrint; 
+        window.print(); 
+        printArea.innerHTML = ''; 
+    } 
 }
 
-function updateCartDisplay() {
-    const subtotal = appState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const totalItems = appState.cart.reduce((sum, item) => sum + item.quantity, 0);
-    const discount = calculateDiscount(appState.cart);
-
-    document.getElementById('cart-total-amount').textContent = `₱${(subtotal - discount).toFixed(2)}`;
-    document.getElementById('cart-item-count').textContent = totalItems;
-    
-    const checkoutButton = document.getElementById('checkout-button-from-cart');
-    if (totalItems > 0) {
-        checkoutButton.disabled = false;
-        checkoutButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
-        checkoutButton.classList.add('bg-green-600');
-    } else {
-        checkoutButton.disabled = true;
-        checkoutButton.classList.add('bg-gray-400', 'cursor-not-allowed');
-        checkoutButton.classList.remove('bg-green-600');
-    }
+async function finalizeOrder() { 
+    const customerName = document.getElementById('customer-name').value; 
+    if (!customerName) { alert("Please enter your name."); return; } 
+    const receiptNumber = `TRKY-${Date.now().toString().slice(-6)}`; 
+    const subtotal = appState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0); 
+    const discount = calculateDiscount(appState.cart); 
+    const newOrder = { receiptNumber, customerName, orderType: appState.orderType, items: JSON.parse(JSON.stringify(appState.cart)), subtotal, discount, deliveryCharge: appState.orderType === 'Delivery' ? appState.deliveryCharge : 0, paymentMode: document.getElementById('payment-mode').value, timestamp: firebase.firestore.FieldValue.serverTimestamp(), status: 'Pending', hotSauce: document.getElementById('hot-sauce').checked, hotSauceNotes: document.getElementById('hot-sauce-notes').value, }; 
+    if (appState.orderType === 'Delivery') { newOrder.location = `${document.getElementById('location').value}, ${document.getElementById('municipality').value}`; newOrder.landmark = document.getElementById('landmark').value; } 
+    if (appState.orderType === 'Pick-Up') { newOrder.pickupTime = document.getElementById('pickup-time').value; } 
+    newOrder.totalAmount = newOrder.subtotal - newOrder.discount + newOrder.deliveryCharge; 
+    try { 
+        await db.collection("orders").add(newOrder); 
+        const tempOrderForReceipt = {...newOrder, timestamp: new Date()}; 
+        showReceiptModal(tempOrderForReceipt); 
+    } catch (error) { 
+        console.error("Error adding order to database: ", error); 
+        alert("There was a problem submitting your order. Please try again."); 
+    } 
 }
-
-function showCartModal() {
-    const listEl = document.getElementById('cart-items-list');
-    listEl.innerHTML = '';
-
-    if (appState.cart.length === 0) {
-        listEl.innerHTML = '<p class="text-center text-gray-400">Your cart is empty.</p>';
-    } else {
-        appState.cart.forEach(item => {
-            listEl.innerHTML += `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="text-lg text-golden">${item.name}</p>
-                        <p class="text-sm text-gray-400">${item.quantity} x ₱${item.price.toFixed(2)}</p>
-                    </div>
-                    <p class="text-xl font-bold">₱${(item.quantity * item.price).toFixed(2)}</p>
-                </div>
-            `;
-        });
-    }
-
-    const subtotal = appState.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const discount = calculateDiscount(appState.cart);
-    
-    document.getElementById('cart-subtotal').textContent = `₱${subtotal.toFixed(2)}`;
-    
-    const discountRow = document.getElementById('cart-discount-row');
-    if (discount > 0) {
-        document.getElementById('cart-discount').textContent = `- ₱${discount.toFixed(2)}`;
-        discountRow.classList.remove('hidden');
-    } else {
-        discountRow.classList.add('hidden');
-    }
-    
-    document.getElementById('cart-delivery-fee').textContent = `₱${appState.deliveryCharge.toFixed(2)}`;
-    document.getElementById('cart-grand-total').textContent = `₱${(subtotal - discount + appState.deliveryCharge).toFixed(2)}`;
-
-    document.getElementById('cartModal').classList.remove('hidden');
+async function updateOrderStatus(orderId, newStatus) { 
+    if (!db || !orderId) { console.error("Cannot update status: DB not ready or Order ID is missing."); return; } 
+    try { 
+        await db.collection("orders").doc(orderId).update({ status: newStatus }); 
+        console.log(`Order ${orderId} status updated to ${newStatus}`); 
+    } catch (error) { console.error("Error updating order status: ", error); } 
 }
-
-function closeCartModal() {
-    document.getElementById('cartModal').classList.add('hidden');
+async function confirmDelete() { 
+    const orderId = document.getElementById('confirm-delete-btn').dataset.orderId; 
+    if (!db || !orderId) { console.error("Cannot delete: DB not ready or Order ID is missing."); return; } 
+    try { 
+        await db.collection("orders").doc(orderId).delete(); 
+        console.log(`Order ${orderId} successfully deleted.`); 
+        closeDeleteConfirmModal(); 
+    } catch (error) { console.error("Error deleting order: ", error); } 
 }
-
-
-// ===================================================================
-// CHECKOUT FLOW
-// ===================================================================
-function proceedToDrinkPrompt() {
-    closeCartModal();
-    const drinksModalContainer = document.getElementById('drinks-modal-container');
-    drinksModalContainer.innerHTML = '';
-    const drinks = menu.others.filter(item => item.type === 'drink');
-    
-    drinks.forEach(drink => {
-        const itemInCart = appState.cart.find(cartItem => cartItem.id === drink.id);
-        const quantity = itemInCart ? itemInCart.quantity : 0;
-        drinksModalContainer.innerHTML += `
-            <div class="flex justify-between items-center bg-gray-800 p-3 rounded-lg">
-                <p class="text-golden">${drink.name} (₱${drink.price.toFixed(2)})</p>
-                <div class="flex items-center space-x-2">
-                    <button onclick="updateCart('${drink.id}', -1); updateDrinkModalQty('${drink.id}')" class="bg-dark-red text-golden rounded-full h-8 w-8 text-xl font-bold">-</button>
-                    <span id="drink-qty-${drink.id}" class="text-lg font-bold w-8 text-center">${quantity}</span>
-                    <button onclick="updateCart('${drink.id}', 1); updateDrinkModalQty('${drink.id}')" class="bg-dark-red text-golden rounded-full h-8 w-8 text-xl font-bold">+</button>
-                </div>
-            </div>
-        `;
-    });
-
-    document.getElementById('drinkPromptModal').classList.remove('hidden');
+function deleteOrder(orderId) { 
+    const order = appState.allOrders.find(o => o.id === orderId); 
+    if (!order) return; 
+    const detailsEl = document.getElementById('delete-confirm-details'); 
+    detailsEl.innerHTML = `<p><strong>Receipt:</strong> <span class="text-golden">#${order.receiptNumber}</span></p><p><strong>Customer:</strong> ${order.customerName}</p><p><strong>Total:</strong> ₱${order.totalAmount.toFixed(2)}</p>`; 
+    document.getElementById('confirm-delete-btn').dataset.orderId = orderId; 
+    document.getElementById('deleteConfirmModal').classList.remove('hidden'); 
 }
+function closeDeleteConfirmModal() { document.getElementById('deleteConfirmModal').classList.add('hidden'); }
 
-function updateDrinkModalQty(itemId) {
-    const itemInCart = appState.cart.find(item => item.id === itemId);
-    document.getElementById(`drink-qty-${itemId}`).textContent = itemInCart ? itemInCart.quantity : 0;
-}
-
-function proceedToCheckoutForm() {
-    document.getElementById('drinkPromptModal').classList.add('hidden');
-    
-    appState.kioskStep = 'checkout';
-    document.getElementById('menu-selection').classList.add('hidden');
-    document.getElementById('cart-button').classList.add('hidden');
-    
-    const checkoutForm = document.getElementById('checkout-form');
-    checkoutForm.classList.remove('hidden');
-    checkoutForm.classList.add('fade-in');
-
-    // Show/hide fields based on order type
-    document.getElementById('delivery-fields').style.display = appState.orderType === 'Delivery' ? 'block' : 'none';
-    document.getElementById('pickup-fields').style.display = appState.orderType === 'Pick-Up' ? 'block' : 'none';
-    
-    if (appState.orderType === 'Delivery') {
-        updateLocations(); // Initialize location dropdown
-    }
-}
-
-function updateLocations() {
-    const municipality = document.getElementById('municipality').value;
-    const locationSelect = document.getElementById('location');
-    locationSelect.innerHTML = '<option value="">Select Location</option>';
-    if (locations[municipality]) {
-        locations[municipality].forEach(loc => {
-            locationSelect.innerHTML += `<option value="${loc.name}">${loc.name}</option>`;
-        });
-    }
-    updateDeliveryCharge();
-}
-
-function updateDeliveryCharge() {
-    const municipality = document.getElementById('municipality').value;
-    const locationName = document.getElementById('location').value;
-    const textEl = document.getElementById('delivery-charge-text');
-    appState.deliveryCharge = 0;
-    
-    if (municipality && locationName && locations[municipality]) {
-        const loc = locations[municipality].find(l => l.name === locationName);
-        if (loc) {
-            appState.deliveryCharge = loc.charge;
-            if (loc.charge > 0) {
-                textEl.innerHTML = `🚚 Delivery Charge: ₱${loc.charge.toFixed(2)}`;
-            } else {
-                textEl.innerHTML = `✅ Free Delivery`;
-            }
-        }
-    } else {
-        textEl.innerHTML = '';
-    }
-    updateCartDisplay();
-}
-
-function finalizeOrder() {
-    const customerName = document.getElementById('customer-name').value;
-    if (!customerName) {
-        alert("Please enter your name.");
-        return;
-    }
-
-    const receiptNumber = `TRKY-${Date.now().toString().slice(-6)}`;
-    const subtotal = appState.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const discount = calculateDiscount(appState.cart);
-
-    const newOrder = {
-        receiptNumber,
-        customerName,
-        orderType: appState.orderType,
-        items: JSON.parse(JSON.stringify(appState.cart)), // Deep copy
-        subtotal: subtotal,
-        discount: discount,
-        deliveryCharge: appState.orderType === 'Delivery' ? appState.deliveryCharge : 0,
-        paymentMode: document.getElementById('payment-mode').value,
-        timestamp: new Date(),
-        status: 'Pending',
-        hotSauce: document.getElementById('hot-sauce').checked,
-        hotSauceNotes: document.getElementById('hot-sauce-notes').value,
-    };
-
-    if (appState.orderType === 'Delivery') {
-        newOrder.location = `${document.getElementById('location').value}, ${document.getElementById('municipality').value}`;
-        newOrder.landmark = document.getElementById('landmark').value;
-    }
-    if (appState.orderType === 'Pick-Up') {
-        newOrder.pickupTime = document.getElementById('pickup-time').value;
-    }
-    
-    newOrder.totalAmount = newOrder.subtotal - newOrder.discount + newOrder.deliveryCharge;
-
-    appState.allOrders.unshift(newOrder); // Add to beginning of array
-    showReceiptModal(newOrder);
-    notifyAdminOfNewOrder(newOrder);
-}
-
-function showReceiptModal(order) {
-    const contentEl = document.getElementById('receipt-content');
-    let itemsHTML = '';
-    order.items.forEach(item => {
-        itemsHTML += `<p>${item.quantity}x ${item.name} <span class="float-right">₱${(item.price * item.quantity).toFixed(2)}</span></p>`;
-    });
-
-    contentEl.innerHTML = `
-        <h3 class="text-2xl font-japanese text-center mb-4 text-golden">Receipt #${order.receiptNumber}</h3>
-        <p><strong>Name:</strong> ${order.customerName}</p>
-        <p><strong>Type:</strong> ${order.orderType}</p>
-        ${order.orderType === 'Delivery' ? `<p><strong>Location:</strong> ${order.location}</p>` : ''}
-        ${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}
-        <hr class="my-2 border-golden border-dashed">
-        ${itemsHTML}
-        <hr class="my-2 border-golden border-dashed">
-        <div class="text-right space-y-1">
-            <p>Subtotal: <span>₱${order.subtotal.toFixed(2)}</span></p>
-            ${order.discount > 0 ? `<p class="text-green-400">Combo Discount: <span>- ₱${order.discount.toFixed(2)}</span></p>` : ''}
-            <p>Delivery Fee: <span>₱${order.deliveryCharge.toFixed(2)}</span></p>
-            <p class="text-xl font-bold">Total: <span class="text-golden">₱${order.totalAmount.toFixed(2)}</span></p>
-        </div>
-        <p class="mt-4"><strong>Payment:</strong> ${order.paymentMode}</p>
-    `;
-    
-    document.getElementById('gcash-info').style.display = order.paymentMode === 'GCash' ? 'block' : 'none';
-    document.getElementById('checkout-form').classList.add('hidden');
-    document.getElementById('receiptModal').classList.remove('hidden');
-}
-
-function finishOrder() {
-    // Reset kiosk state
-    appState.cart = [];
-    appState.orderType = '';
-    appState.deliveryCharge = 0;
-    appState.kioskStep = 'order-type';
-
-    document.getElementById('receiptModal').classList.add('hidden');
-    document.getElementById('order-type-selection').classList.remove('hidden');
-    document.getElementById('back-button').classList.add('hidden');
-    document.getElementById('cart-button').classList.add('hidden');
-    document.getElementById('customer-name').value = '';
-    
-    updateCartDisplay();
-}
-
-
-// ===================================================================
-// ADMIN LOGIC
-// ===================================================================
-function handleLogin(event) {
-    event.preventDefault();
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value;
-    const errorEl = document.getElementById('loginError');
-
-    if (email.toUpperCase() === 'TARAYAKI' && password === '081121') {
-        errorEl.textContent = '';
-        showView('adminDashboardView');
-        updateAdminDashboard();
-    } else {
-        errorEl.textContent = 'Incorrect email or password.';
-    }
-}
-
-function logout() {
-    document.getElementById('loginForm').reset();
-    showView('loginView');
-}
-
-function notifyAdminOfNewOrder(order) {
-    appState.newNotificationCount++;
-    const badge = document.getElementById('notification-badge');
-    badge.textContent = appState.newNotificationCount;
-    badge.classList.remove('hidden');
-
-    const sound = document.getElementById('notification-sound');
-    sound.play().catch(error => console.log("Audio play failed:", error));
-    
-    if (appState.currentView === 'adminDashboardView') {
-        updateAdminDashboard();
-    }
-
-    // Also update cashier view if it's open for real-time updates
-    if (!document.getElementById('cashierOrdersModal').classList.contains('hidden')) {
-        updateCashierOrdersView();
-    }
-}
-
-function updateAdminDashboard() {
-    // Initialize calendar if it hasn't been already
-    initializeAdminCalendar();
-
-    // Clear notification badge when admin is viewing
-    appState.newNotificationCount = 0;
-    document.getElementById('notification-badge').classList.add('hidden');
-
-    // Update sales to only include 'Done' orders
-    const today = new Date().toDateString();
-    const todaysDoneOrders = appState.allOrders.filter(o => new Date(o.timestamp).toDateString() === today && o.status === 'Done');
-    const totalSales = todaysDoneOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-    document.getElementById('total-sales-today').textContent = totalSales.toFixed(2);
-    
-    // Update orders list
-    const listContainer = document.getElementById('admin-orders-list');
-    listContainer.innerHTML = '';
-
-    if (appState.allOrders.length === 0) {
-        listContainer.innerHTML = '<p class="text-center text-gray-400">No orders yet.</p>';
-        return;
-    }
-
-    appState.allOrders.forEach(order => {
-        const orderTime = new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const typeIcons = {
-            'Dine-In': 'fa-utensils',
-            'Pick-Up': 'fa-shopping-bag',
-            'Delivery': 'fa-motorcycle'
-        };
-
-        const statusColors = {
-            'Pending': 'bg-yellow-500',
-            'Preparing': 'bg-blue-500',
-            'Done': 'bg-green-500',
-        };
-
-        const orderCard = `
-            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                <div class="flex-1 text-center md:text-left">
-                    <p class="text-lg font-bold text-golden">#${order.receiptNumber}</p>
-                    <p class="text-gray-300">${order.customerName}</p>
-                </div>
-                <div class="flex-1 text-center">
-                    <p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p>
-                    <p class="text-gray-400">${orderTime}</p>
-                </div>
-                <div class="flex-1 text-center">
-                    <p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p>
-                </div>
-                <div class="flex-1 flex justify-center items-center space-x-2">
-                    <select onchange="updateOrderStatus('${order.receiptNumber}', this.value)" class="bg-black border border-golden rounded p-2 text-white">
-                        <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                        <option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
-                        <option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option>
-                    </select>
-                </div>
-                <div class="flex-1 flex justify-end space-x-2">
-                    <button onclick="showAdminReceipt('${order.receiptNumber}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button>
-                    <button onclick="deleteOrder('${order.receiptNumber}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `;
-        listContainer.innerHTML += orderCard;
-    });
-
-    // Populate calendar with sales data
-    populateCalendarWithSales();
-}
-
-function updateOrderStatus(receiptNumber, newStatus) {
-    const order = appState.allOrders.find(o => o.receiptNumber === receiptNumber);
-    if (order) {
-        order.status = newStatus;
-        // In a real app, this would save to a database.
-    }
-    // Immediately refresh admin dashboard to update sales total if it's the current view
-    if (appState.currentView === 'adminDashboardView') {
-        updateAdminDashboard();
-    }
-}
-
-function showAdminReceipt(receiptNumber) {
-    const order = appState.allOrders.find(o => o.receiptNumber === receiptNumber);
-    if (!order) return;
-    
-    const modalContent = document.getElementById('admin-receipt-content');
-    let itemsHTML = '';
-    order.items.forEach(item => {
-        itemsHTML += `<p>${item.quantity}x ${item.name} <span class="float-right">₱${(item.price * item.quantity).toFixed(2)}</span></p>`;
-    });
-
-    modalContent.innerHTML = `
-        <div class="flex justify-between items-center mb-4">
-             <h2 class="text-2xl font-japanese text-golden">Order #${order.receiptNumber}</h2>
-        </div>
-        <div class="bg-black p-4 rounded-lg border border-golden space-y-2">
-            <p><strong>Customer:</strong> ${order.customerName}</p>
-            <p><strong>Time:</strong> ${new Date(order.timestamp).toLocaleString()}</p>
-            <p><strong>Type:</strong> ${order.orderType}</p>
-            ${order.orderType === 'Delivery' ? `<p><strong>Address:</strong> ${order.location} (${order.landmark})</p>` : ''}
-            ${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}
-            <p><strong>Payment:</strong> ${order.paymentMode}</p>
-            ${order.hotSauce ? `<p><strong>Hot Sauce:</strong> Yes (${order.hotSauceNotes || 'No notes'})</p>` : '<p><strong>Hot Sauce:</strong> No</p>'}
-             <hr class="my-2 border-golden border-dashed">
-            ${itemsHTML}
-             <hr class="my-2 border-golden border-dashed">
-            <div class="text-right space-y-1">
-                <p>Subtotal: <span class="float-right">₱${order.subtotal.toFixed(2)}</span></p>
-                ${order.discount > 0 ? `<p class="text-green-400">Discount: <span class="float-right">- ₱${order.discount.toFixed(2)}</span></p>` : ''}
-                <p>Delivery: <span class="float-right">₱${order.deliveryCharge.toFixed(2)}</span></p>
-                <p class="text-xl font-bold">Total: <span class="text-golden float-right">₱${order.totalAmount.toFixed(2)}</span></p>
-            </div>
-        </div>
-    `;
-    document.getElementById('adminReceiptModal').classList.remove('hidden');
-}
-
-function closeAdminReceipt() {
-    document.getElementById('adminReceiptModal').classList.add('hidden');
-}
-
-
-// ===================================================================
-// CASHIER ORDER VIEW
-// ===================================================================
-function showCashierOrdersModal() {
-    updateCashierOrdersView();
-    document.getElementById('cashierOrdersModal').classList.remove('hidden');
-}
-
-function closeCashierOrdersModal() {
-    document.getElementById('cashierOrdersModal').classList.add('hidden');
-}
-
-function updateCashierOrdersView() {
-    const listContainer = document.getElementById('cashier-orders-list');
-    listContainer.innerHTML = '';
-
-    if (appState.allOrders.length === 0) {
-        listContainer.innerHTML = '<p class="text-center text-gray-400">No orders yet.</p>';
-        return;
-    }
-
-    appState.allOrders.forEach(order => {
-        const orderTime = new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        const typeIcons = {
-            'Dine-In': 'fa-utensils',
-            'Pick-Up': 'fa-shopping-bag',
-            'Delivery': 'fa-motorcycle'
-        };
-
-        const orderCard = `
-            <div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-                <div class="flex-1 text-center md:text-left">
-                    <p class="text-lg font-bold text-golden">#${order.receiptNumber}</p>
-                    <p class="text-gray-300">${order.customerName}</p>
-                </div>
-                <div class="flex-1 text-center">
-                    <p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p>
-                    <p class="text-gray-400">${orderTime}</p>
-                </div>
-                <div class="flex-1 text-center">
-                    <p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p>
-                </div>
-                <div class="flex-1 flex justify-center items-center space-x-2">
-                    <select onchange="updateOrderStatus('${order.receiptNumber}', this.value)" class="bg-black border border-golden rounded p-2 text-white">
-                        <option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option>
-                        <option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
-                        <option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option>
-                    </select>
-                </div>
-                <div class="flex-1 flex justify-end space-x-2">
-                    <button onclick="showAdminReceipt('${order.receiptNumber}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button>
-                    <button onclick="deleteOrder('${order.receiptNumber}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `;
-        listContainer.innerHTML += orderCard;
-    });
-}
-
-
-// ===================================================================
-// SALES HISTORY, EXPORT & CALENDAR
-// ===================================================================
-function initializeAdminCalendar() {
-    if (!window.Calendar || calendarInstance) return; // Library not loaded or already initialized
-    
-    const calendarEl = document.getElementById('admin-calendar');
-    if (!calendarEl) return;
-
-    calendarInstance = new Calendar(calendarEl, {
-        onSelect: (data) => {
-            const selectedDate = new Date(data.date).toISOString().split('T')[0];
-            showSalesForDate(selectedDate);
-        },
-    });
-
-    // Re-populate sales data when the user changes the month
-    calendarEl.addEventListener('vjc-month-change', () => {
-         setTimeout(populateCalendarWithSales, 100);
-    });
-}
-
-function populateCalendarWithSales() {
-    if (!calendarInstance) return;
-
-    const salesByDate = appState.allOrders
-        .filter(order => order.status === 'Done') // Only count 'Done' orders for sales
-        .reduce((acc, order) => {
-            const date = new Date(order.timestamp).toISOString().split('T')[0];
-            if (!acc[date]) {
-                acc[date] = 0;
-            }
-            acc[date] += order.totalAmount;
-            return acc;
-    }, {});
-
-    const dateElements = document.querySelectorAll('.vjc-date:not(.vjc-date--disabled)');
-    dateElements.forEach(el => {
-        const dateStr = el.dataset.date;
-        const contentWrapper = el.querySelector('.vjc-date-content') || el;
-        
-        const existingSaleEl = contentWrapper.querySelector('.vjc-day-sale');
-        if (existingSaleEl) {
-            existingSaleEl.remove();
-        }
-
-        if (salesByDate[dateStr]) {
-             const saleAmount = salesByDate[dateStr];
-             const saleEl = document.createElement('span');
-             saleEl.className = 'vjc-day-sale';
-             saleEl.textContent = `₱${Math.round(saleAmount)}`;
-             contentWrapper.appendChild(saleEl);
-        }
-    });
-}
-
-function showSalesForDate(dateStr) {
-    document.getElementById('sales-start-date').value = dateStr;
-    document.getElementById('sales-end-date').value = dateStr;
-    generateSalesReport();
-    document.getElementById('salesHistoryModal').classList.remove('hidden');
-}
-
-function toggleSalesHistory() {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('sales-start-date').value = today;
-    document.getElementById('sales-end-date').value = today;
-    generateSalesReport();
-    document.getElementById('salesHistoryModal').classList.remove('hidden');
-}
-
-function closeSalesHistory() {
-    document.getElementById('salesHistoryModal').classList.add('hidden');
-}
-
-function generateSalesReport() {
-    const startDate = new Date(document.getElementById('sales-start-date').value);
-    startDate.setHours(0,0,0,0);
-    const endDate = new Date(document.getElementById('sales-end-date').value);
-    endDate.setHours(23,59,59,999);
-
-    const filteredOrders = appState.allOrders.filter(o => {
-        const orderDate = new Date(o.timestamp);
-        return orderDate >= startDate && orderDate <= endDate;
-    });
-
-    const totalSales = filteredOrders.reduce((sum, o) => sum + o.totalAmount, 0);
-    document.getElementById('sales-history-total').textContent = `₱${totalSales.toFixed(2)}`;
-    
-    const listEl = document.getElementById('sales-history-list');
-    listEl.innerHTML = '';
-    if (filteredOrders.length === 0) {
-        listEl.innerHTML = '<p class="text-gray-400 text-center">No sales in this period.</p>';
-        return;
-    }
-
-    filteredOrders.forEach(order => {
-        listEl.innerHTML += `
-            <div class="flex justify-between items-center p-2 bg-gray-800 rounded">
-                <div>
-                    <p class="text-golden">#${order.receiptNumber} (${order.customerName})</p>
-                    <p class="text-xs text-gray-400">${new Date(order.timestamp).toLocaleString()}</p>
-                </div>
-                <p class="font-bold text-lg">₱${order.totalAmount.toFixed(2)}</p>
-            </div>
-        `;
-    });
-}
-
-function exportSalesToCSV() {
-    const startDate = new Date(document.getElementById('sales-start-date').value);
-    startDate.setHours(0,0,0,0);
-    const endDate = new Date(document.getElementById('sales-end-date').value);
-    endDate.setHours(23,59,59,999);
-
-    const filteredOrders = appState.allOrders.filter(o => {
-        const orderDate = new Date(o.timestamp);
-        return orderDate >= startDate && orderDate <= endDate;
-    });
-
-    if (filteredOrders.length === 0) {
-        alert("No sales data to export for the selected period.");
-        return;
-    }
-
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Receipt Number,Date,Time,Customer,Type,Status,Subtotal,Discount,Delivery,Total,Payment,Items\n";
-
-    filteredOrders.forEach(order => {
-        const orderDate = new Date(order.timestamp);
-        const date = orderDate.toLocaleDateString();
-        const time = orderDate.toLocaleTimeString();
-        const items = order.items.map(i => `${i.quantity}x ${i.name}`).join('; ');
-        
-        let row = [
-            order.receiptNumber,
-            date,
-            time,
-            order.customerName,
-            order.orderType,
-            order.status,
-            order.subtotal,
-            order.discount,
-            order.deliveryCharge,
-            order.totalAmount,
-            order.paymentMode,
-            `"${items}"` // Enclose items in quotes to handle commas
-        ].join(',');
-        csvContent += row + "\r\n";
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    const fileName = `TARAYAKI_Sales_${startDate.toISOString().split('T')[0]}_to_${endDate.toISOString().split('T')[0]}.csv`;
-    link.setAttribute("download", fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// ===================================================================
-// PRINT & EXPORT LOGIC
-// ===================================================================
-function printReceipt(elementId, isCustomerReceipt = false) {
-    const printArea = document.getElementById('print-area');
-    let contentToPrint = '';
-    let orderToPrint;
-
-    if (isCustomerReceipt) {
-        // For customer receipt, it's always the most recent order
-        orderToPrint = appState.allOrders[0];
-    } else {
-        // For admin, find the specific order being viewed
-        const adminReceiptWrapper = document.getElementById(elementId);
-        const receiptNumberText = adminReceiptWrapper.querySelector('h2').textContent.replace('Order #', '');
-        orderToPrint = appState.allOrders.find(o => o.receiptNumber === receiptNumberText);
-    }
-    
-    if (orderToPrint) {
-        let itemsHTML = '';
-        orderToPrint.items.forEach(item => {
-            itemsHTML += `
-                <tr>
-                    <td class="item-col">${item.name}</td>
-                    <td class="qty-col">${item.quantity}</td>
-                    <td class="price-col">P${(item.price * item.quantity).toFixed(2)}</td>
-                </tr>
-            `;
-        });
-
-        contentToPrint = `
-            <div class="print-header">
-                <h1>TARAYAKI</h1>
-                <p>Tara, Takoyaki!</p>
-                <p>${new Date(orderToPrint.timestamp).toLocaleString()}</p>
-                <hr class="print-hr">
-                <p>Receipt #${orderToPrint.receiptNumber}</p>
-                <p>Customer: ${orderToPrint.customerName}</p>
-                ${isCustomerReceipt ? '' : `<p>Status: ${orderToPrint.status}</p>`}
-            </div>
-            <table class="print-table">
-                <thead><tr><th class="item-col">Item</th><th class="qty-col">Qty</th><th class="price-col">Price</th></tr></thead>
-                <tbody>${itemsHTML}</tbody>
-            </table>
-            <hr class="print-hr">
-            <div class="print-totals">
-                <p>Subtotal: P${orderToPrint.subtotal.toFixed(2)}</p>
-                ${orderToPrint.discount > 0 ? `<p>Discount: -P${orderToPrint.discount.toFixed(2)}</p>` : ''}
-                <p>Delivery: P${orderToPrint.deliveryCharge.toFixed(2)}</p>
-                <p class="total">TOTAL: P${orderToPrint.totalAmount.toFixed(2)}</p>
-            </div>
-            <p style="text-align: center; margin-top: 20px;">Thank you for your order!</p>
-        `;
-    }
-    
-    if (contentToPrint) {
-        printArea.innerHTML = contentToPrint;
-        window.print();
-        printArea.innerHTML = ''; // Clear after printing
-    }
-}
-
-
-// ===================================================================
-// DELETE ORDER LOGIC
-// ===================================================================
-function deleteOrder(receiptNumber) {
-    const order = appState.allOrders.find(o => o.receiptNumber === receiptNumber);
-    if (!order) return;
-    const detailsEl = document.getElementById('delete-confirm-details');
-    detailsEl.innerHTML = `
-        <p><strong>Receipt:</strong> <span class="text-golden">#${order.receiptNumber}</span></p>
-        <p><strong>Customer:</strong> ${order.customerName}</p>
-        <p><strong>Total:</strong> ₱${order.totalAmount.toFixed(2)}</p>
-    `;
-    document.getElementById('confirm-delete-btn').dataset.receiptNumber = receiptNumber;
-    document.getElementById('deleteConfirmModal').classList.remove('hidden');
-}
-
-function closeDeleteConfirmModal() {
-    document.getElementById('deleteConfirmModal').classList.add('hidden');
-}
-
-function confirmDelete() {
-    const receiptNumber = document.getElementById('confirm-delete-btn').dataset.receiptNumber;
-    appState.allOrders = appState.allOrders.filter(o => o.receiptNumber !== receiptNumber);
-    closeDeleteConfirmModal();
-
-    // Refresh views
-    if (appState.currentView === 'adminDashboardView') {
-        updateAdminDashboard();
-    }
-    if (!document.getElementById('cashierOrdersModal').classList.contains('hidden')) {
-        updateCashierOrdersView();
-    }
-}
 </script>
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
-                .then(registration => {
-                    console.log('ServiceWorker registration successful with scope: ', registration.scope);
-                })
-                .catch(err => {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
+                .then(registration => console.log('ServiceWorker registration successful.'))
+                .catch(err => console.log('ServiceWorker registration failed: ', err));
         });
     }
 </script>
