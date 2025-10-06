@@ -12,19 +12,19 @@
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts for Japanese Paint Style -->
+    <!-- Preload critical fonts for faster rendering -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Yuji+Syuku&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
     
-    <!-- Font Awesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Preload critical icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
 
     <!-- Vanilla JS Calendar -->
     <link href="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.2.0/build/vanilla-js-calendar.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.2.0/build/vanilla-js-calendar.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanilla-js-calendar@1.2.0/build/vanilla-js-calendar.min.js" defer></script>
     
-    <!-- NEW: Firebase SDKs -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -103,6 +103,11 @@
             align-items: center;
         }
 
+        /* FIX: Ensure delete confirmation is always on top */
+        #deleteConfirmModal {
+            z-index: 50;
+        }
+
         .modal-content {
             background-color: #1a1a1a;
             border: 2px solid #FFD700;
@@ -170,7 +175,7 @@
             height: 100%;
             width: 100%;
             border-radius: 50%;
-            transition: background-color 0.2s;
+            transition: background-color: 0.2s;
         }
         .vjc-day-sale {
             font-size: 0.7rem;
@@ -405,12 +410,24 @@
 
                         <div>
                             <label class="text-golden font-japanese text-lg">Mode of Payment</label>
-                            <select id="payment-mode" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white">
+                            <select id="payment-mode" onchange="toggleCashPaymentView()" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white">
                                 <option value="Cash">Cash</option>
                                 <option value="GCash">GCash</option>
                             </select>
                         </div>
                         
+                        <!-- NEW: Cash Payment Details Section -->
+                        <div id="cash-payment-details" class="space-y-4 border-t-2 border-golden pt-4 mt-4">
+                            <div>
+                                <label class="text-golden font-japanese text-lg">Cash Received</label>
+                                <input type="number" id="checkout-cash-received" oninput="calculateCheckoutChange()" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white text-2xl text-center" placeholder="0.00">
+                            </div>
+                            <div class="flex justify-between items-center text-xl p-2 bg-gray-800 rounded-lg">
+                                <span class="text-golden font-japanese">Change:</span>
+                                <span id="checkout-change" class="font-bold text-green-400 text-3xl">₱0.00</span>
+                            </div>
+                        </div>
+
                         <button onclick="finalizeOrder()" class="w-full bg-blue-600 text-white font-bold py-4 px-4 rounded-lg text-2xl font-japanese hover:bg-blue-800 transition-colors duration-300">
                            COMPLETE ORDER
                         </button>
@@ -514,9 +531,11 @@
                 <img src="https://i.imgur.com/Al8pP9W.jpg" alt="GCash QR Code" class="mx-auto my-4 w-64 h-auto border-2 border-golden rounded-lg">
                 <p class="text-2xl font-bold text-golden">0976 579 6838</p>
             </div>
-            <div class="flex justify-center space-x-4 mt-8">
-                <button onclick="finishOrder()" class="bg-dark-red text-golden py-3 px-8 rounded-lg font-japanese text-xl">Done ✅</button>
-                <button onclick="printReceipt('receipt-content', true)" class="bg-gray-600 text-white py-3 px-8 rounded-lg font-japanese text-xl"><i class="fas fa-print mr-2"></i>Print</button>
+            <div class="grid grid-cols-2 gap-2 mt-8">
+                <button onclick="copyReceipt()" class="bg-blue-600 text-white py-3 px-4 rounded-lg font-japanese text-lg flex items-center justify-center gap-2"><i class="fas fa-copy"></i> Copy</button>
+                <button onclick="shareToMessenger()" class="bg-indigo-600 text-white py-3 px-4 rounded-lg font-japanese text-lg flex items-center justify-center gap-2"><i class="fab fa-facebook-messenger"></i> Share</button>
+                <button onclick="printReceipt('receipt-content', true)" class="bg-gray-600 text-white py-3 px-4 rounded-lg font-japanese text-lg flex items-center justify-center gap-2"><i class="fas fa-print"></i> Print</button>
+                <button onclick="finishOrder()" class="bg-dark-red text-golden py-3 px-4 rounded-lg font-japanese text-lg">Done ✅</button>
             </div>
         </div>
     </div>
@@ -569,6 +588,31 @@
         </div>
     </div>
 
+    <!-- NEW: Cash Payment Modal -->
+    <div id="paymentModal" class="hidden modal-backdrop">
+        <div class="modal-content w-full max-w-sm">
+            <h2 class="text-4xl font-japanese text-golden mb-6 text-center">Cash Payment</h2>
+            <div class="space-y-4 text-lg">
+                <div class="flex justify-between p-2 bg-gray-800 rounded-lg">
+                    <span>Total Due:</span>
+                    <span id="payment-total-due" class="font-bold text-golden">₱0.00</span>
+                </div>
+                <div>
+                    <label for="cash-received-input" class="block mb-2 text-golden font-japanese text-xl">Cash Received:</label>
+                    <input type="number" id="cash-received-input" class="w-full bg-black border-2 border-golden p-3 rounded-lg text-white text-3xl text-center font-bold">
+                </div>
+                <div class="flex justify-between p-2 bg-gray-800 rounded-lg text-2xl">
+                    <span>Change:</span>
+                    <span id="payment-change-display" class="font-bold text-green-400">₱0.00</span>
+                </div>
+            </div>
+            <div class="flex justify-between mt-8">
+                <button onclick="closePaymentModal()" class="bg-gray-600 text-white py-3 px-6 rounded-lg font-japanese text-lg">Cancel</button>
+                <button id="save-payment-btn" onclick="savePayment()" class="bg-blue-600 text-white py-3 px-6 rounded-lg font-japanese text-lg">Save Payment</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Cashier Orders Modal -->
     <div id="cashierOrdersModal" class="hidden modal-backdrop">
         <div class="modal-content w-full max-w-4xl">
@@ -587,6 +631,13 @@
 
     <!-- Audio for notification -->
     <audio id="notification-sound" src="https://assets.mixkit.co/sfx/preview/mixkit-clear-interface-bell-461.mp3" preload="auto"></audio>
+
+    <!-- NEW: Hidden elements for copy/share functionality -->
+    <textarea id="copy-helper" style="position: absolute; left: -9999px;"></textarea>
+    <div id="copy-toast" class="hidden fixed bottom-10 left-1/2 -translate-x-1/2 bg-green-600 text-white py-2 px-4 rounded-lg z-50 font-sans">
+        Receipt copied to clipboard!
+    </div>
+
 
 <script>
 // ===================================================================
@@ -620,7 +671,17 @@ const menu = {
     others: [ { id: 'o1', name: 'Fruit Soda (Blueberry)', type: 'drink', price: 39 }, { id: 'o2', name: 'Fruit Soda (Green Apple)', type: 'drink', price: 39 }, { id: 'o3', name: 'Fruit Soda (Wintermelon)', type: 'drink', price: 39 }, { id: 'o4', name: 'Fruit Soda (Strawberry)', type: 'drink', price: 39 }, { id: 'o5', name: 'Fruit Soda (Bluelemonade)', type: 'drink', price: 39 }, { id: 'o6', name: 'Fruit Soda (Four Season)', type: 'drink', price: 39 }, { id: 'o7', name: 'Fruit Soda (Lychee)', type: 'drink', price: 39 }, { id: 'o8', name: 'Coke in Can', type: 'drink', price: 40 }, { id: 'o9', name: 'Sprite in Can', type: 'drink', price: 40 }, { id: 'o10', name: 'Royal in Can', type: 'drink', price: 40 }, { id: 'o11', name: 'Mountain Dew in Can', type: 'drink', price: 40 }, { id: 'o12', name: 'Pepsi in Can', type: 'drink', price: 40 }, { id: 'o13', name: 'Water', type: 'drink', price: 15 }, { id: 'o14', name: 'Polvoron', type: 'dessert', price: 10 }, { id: 'o15', name: 'Pastillas', type: 'dessert', price: 5 }, ]
 };
 const locations = { Bobon: [ { name: "Magsaysay", charge: 0 }, { name: "Sitio, Balud (Magsaysay)", charge: 10 }, { name: "Sta. Clara", charge: 0 }, { name: "San Juan", charge: 0 }, { name: "Gen. Lucban", charge: 0 }, { name: "Baybay", charge: 0 }, { name: "Salvacion", charge: 0 }, { name: "Feeder Road (Salvacion)", charge: 0 }, { name: "Sitio Balucawe (Salvacion)", charge: 10 }, { name: "Balat Balud", charge: 15 }, { name: "San Isidro", charge: 10 }, { name: "Dancalan", charge: 20 }, ], "San Jose": [ { name: "Geratag", charge: 25 }, { name: "Aguadahan", charge: 35 }, { name: "Layuhan", charge: 40 }, { name: "North", charge: 40 }, { name: "West", charge: 40 }, { name: "P. Tingson", charge: 40 }, ], Catarman: [ { name: "Rizal", charge: 10 }, { name: "Daganas", charge: 15 }, { name: "Dalakit", charge: 20 }, { name: "Bankerohan", charge: 30 }, ] };
-let appState = { currentView: 'kioskView', kioskStep: 'order-type', orderType: '', cart: [], allOrders: [], deliveryCharge: 0, newNotificationCount: 0, };
+let appState = { 
+    currentView: 'kioskView', 
+    kioskStep: 'order-type', 
+    orderType: '', 
+    cart: [], 
+    todaysOrders: [], // For live view performance
+    allOrders: [], // For sales history
+    allOrdersFetched: false, // Flag to prevent re-fetching all orders
+    deliveryCharge: 0, 
+    newNotificationCount: 0, 
+};
 let calendarInstance = null;
 
 // ===================================================================
@@ -677,23 +738,29 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Set up a real-time listener for orders
+    // Set up a real-time listener for TODAY's orders for performance
     try {
-        db.collection("orders").orderBy("timestamp", "desc").onSnapshot(snapshot => {
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        db.collection("orders")
+          .where("timestamp", ">=", todayStart)
+          .orderBy("timestamp", "desc")
+          .onSnapshot(snapshot => {
             let newOrdersDetected = snapshot.docChanges().some(change => change.type === 'added');
 
-            appState.allOrders = []; // Clear the local list
+            appState.todaysOrders = []; // Clear the local list
             snapshot.forEach(doc => {
                 const orderData = doc.data();
                 orderData.id = doc.id; 
                 if (orderData.timestamp && typeof orderData.timestamp.toDate === 'function') {
                     orderData.timestamp = orderData.timestamp.toDate();
                 } 
-                appState.allOrders.push(orderData);
+                appState.todaysOrders.push(orderData);
             });
             
-            if(newOrdersDetected && appState.allOrders.length > 0){
-                const firstOrderTime = appState.allOrders[0].timestamp;
+            if(newOrdersDetected && appState.todaysOrders.length > 0){
+                const firstOrderTime = appState.todaysOrders[0].timestamp;
                 if(firstOrderTime && (new Date() - firstOrderTime < 5000)) { // within 5 seconds
                      notifyAdminOfNewOrder();
                 }
@@ -708,10 +775,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateCashierOrdersView();
             }
         }, error => {
-            console.error("Error fetching orders from Firestore: ", error);
-            // FIX: Add more specific guidance for the most common error.
+            console.error("Error fetching today's orders from Firestore: ", error);
             if (error.code === 'unavailable' || error.code === 'permission-denied') {
-                console.error("%cFIREBASE HINT: This connection error often means your Firestore Security Rules are too restrictive. Please go to your Firebase project -> Firestore Database -> Rules tab and ensure you have rules that allow reading and writing. For testing, you can use: `rules_version = '2'; service cloud.firestore { match /databases/{database}/documents { match /{document=**} { allow read, write: if true; } } }` But remember to secure this for a real application!", "color: yellow; font-size: 1.2em;");
+                console.error("%cFIREBASE HINT: This connection error often means your Firestore Security Rules are too restrictive.", "color: yellow; font-size: 1.2em;");
             }
         });
     } catch (e) {
@@ -856,7 +922,8 @@ function proceedToCheckoutForm() {
     checkoutForm.classList.add('fade-in'); 
     document.getElementById('delivery-fields').style.display = appState.orderType === 'Delivery' ? 'block' : 'none'; 
     document.getElementById('pickup-fields').style.display = appState.orderType === 'Pick-Up' ? 'block' : 'none'; 
-    if (appState.orderType === 'Delivery') { updateLocations(); } 
+    if (appState.orderType === 'Delivery') { updateLocations(); }
+    toggleCashPaymentView(); // Set initial visibility of cash payment section
 }
 function updateLocations() { 
     const municipality = document.getElementById('municipality').value; 
@@ -878,15 +945,50 @@ function updateDeliveryCharge() {
         } 
     } else if(textEl) { textEl.innerHTML = ''; } 
     updateCartDisplay(); 
+    calculateCheckoutChange(); // Recalculate change if delivery fee changes
+}
+function toggleCashPaymentView() {
+    const paymentMode = document.getElementById('payment-mode').value;
+    const cashDetails = document.getElementById('cash-payment-details');
+    if (paymentMode === 'Cash') {
+        cashDetails.classList.remove('hidden');
+        calculateCheckoutChange();
+    } else {
+        cashDetails.classList.add('hidden');
+    }
+}
+function calculateCheckoutChange() {
+    const subtotal = appState.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discount = calculateDiscount(appState.cart);
+    const totalDue = subtotal - discount + appState.deliveryCharge;
+    const cashReceived = parseFloat(document.getElementById('checkout-cash-received').value) || 0;
+    let change = cashReceived - totalDue;
+    if (change < 0) {
+        change = 0;
+    }
+    const changeEl = document.getElementById('checkout-change');
+    if (changeEl) {
+        changeEl.textContent = `₱${change.toFixed(2)}`;
+    }
 }
 function showReceiptModal(order) { 
-    const contentEl = document.getElementById('receipt-content'); 
+    const contentEl = document.getElementById('receipt-content');
+    const receiptModal = document.getElementById('receiptModal');
     let itemsHTML = ''; 
     order.items.forEach(item => { itemsHTML += `<p>${item.quantity}x ${item.name} <span class="float-right">₱${(item.price * item.quantity).toFixed(2)}</span></p>`; }); 
-    contentEl.innerHTML = `<h3 class="text-2xl font-japanese text-center mb-4 text-golden">Receipt #${order.receiptNumber}</h3><p><strong>Name:</strong> ${order.customerName}</p><p><strong>Type:</strong> ${order.orderType}</p>${order.orderType === 'Delivery' ? `<p><strong>Location:</strong> ${order.location}</p>` : ''}${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}<hr class="my-2 border-golden border-dashed">${itemsHTML}<hr class="my-2 border-golden border-dashed"><div class="text-right space-y-1"><p>Subtotal: <span>₱${order.subtotal.toFixed(2)}</span></p>${order.discount > 0 ? `<p class="text-green-400">Combo Discount: <span>- ₱${order.discount.toFixed(2)}</span></p>` : ''}<p>Delivery Fee: <span>₱${order.deliveryCharge.toFixed(2)}</span></p><p class="text-xl font-bold">Total: <span class="text-golden">₱${order.totalAmount.toFixed(2)}</span></p></div><p class="mt-4"><strong>Payment:</strong> ${order.paymentMode}</p>`; 
+    let paymentHTML = '';
+    if (order.cashReceived) {
+        paymentHTML = `<hr class="my-2 border-golden border-dashed"><div class="text-right space-y-1"><p>Amount Paid: <span>₱${order.cashReceived.toFixed(2)}</span></p><p>Change: <span class="text-green-400">₱${order.change.toFixed(2)}</span></p></div>`;
+    }
+    contentEl.innerHTML = `<h3 class="text-2xl font-japanese text-center mb-4 text-golden">Receipt #${order.receiptNumber}</h3><p><strong>Name:</strong> ${order.customerName}</p><p><strong>Type:</strong> ${order.orderType}</p>${order.orderType === 'Delivery' ? `<p><strong>Location:</strong> ${order.location}</p>` : ''}${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}<hr class="my-2 border-golden border-dashed">${itemsHTML}<hr class="my-2 border-golden border-dashed"><div class="text-right space-y-1"><p>Subtotal: <span>₱${order.subtotal.toFixed(2)}</span></p>${order.discount > 0 ? `<p class="text-green-400">Combo Discount: <span>- ₱${order.discount.toFixed(2)}</span></p>` : ''}<p>Delivery Fee: <span>₱${order.deliveryCharge.toFixed(2)}</span></p><p class="text-xl font-bold">Total: <span class="text-golden">₱${order.totalAmount.toFixed(2)}</span></p></div>${paymentHTML}<p class="mt-4"><strong>Payment:</strong> ${order.paymentMode}</p>`; 
+    
+    // FIX: Store the text version of the receipt on the modal itself
+    const receiptText = formatReceiptAsText(order);
+    receiptModal.dataset.receiptText = receiptText;
+
     document.getElementById('gcash-info').style.display = order.paymentMode === 'GCash' ? 'block' : 'none'; 
     document.getElementById('checkout-form').classList.add('hidden'); 
-    document.getElementById('receiptModal').classList.remove('hidden'); 
+    receiptModal.classList.remove('hidden'); 
 }
 function finishOrder() { 
     appState.cart = []; appState.orderType = ''; appState.deliveryCharge = 0; appState.kioskStep = 'order-type'; 
@@ -895,6 +997,7 @@ function finishOrder() {
     document.getElementById('back-button').classList.add('hidden'); 
     document.getElementById('cart-button').classList.add('hidden'); 
     document.getElementById('customer-name').value = ''; 
+    document.getElementById('checkout-cash-received').value = '';
     updateCartDisplay(); 
 }
 function handleLogin(event) { 
@@ -928,29 +1031,41 @@ function updateAdminDashboard() {
     const badge = document.getElementById('notification-badge'); 
     if(badge) badge.classList.add('hidden'); 
     const today = new Date().toDateString(); 
-    const todaysDoneOrders = appState.allOrders.filter(o => o.timestamp && new Date(o.timestamp).toDateString() === today && o.status === 'Done'); 
+    const todaysDoneOrders = appState.todaysOrders.filter(o => o.timestamp && new Date(o.timestamp).toDateString() === today && o.status === 'Done'); 
     const totalSales = todaysDoneOrders.reduce((sum, o) => sum + o.totalAmount, 0); 
     const salesEl = document.getElementById('total-sales-today');
     if(salesEl) salesEl.textContent = totalSales.toFixed(2); 
     const listContainer = document.getElementById('admin-orders-list'); 
     if(!listContainer) return;
     listContainer.innerHTML = ''; 
-    if (appState.allOrders.length === 0) { listContainer.innerHTML = '<p class="text-center text-gray-400">No orders yet.</p>'; return; } 
-    appState.allOrders.forEach(order => { 
-        const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'; 
-        const typeIcons = { 'Dine-In': 'fa-utensils', 'Pick-Up': 'fa-shopping-bag', 'Delivery': 'fa-motorcycle' }; 
-        listContainer.innerHTML += `<div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0"><div class="flex-1 text-center md:text-left"><p class="text-lg font-bold text-golden">#${order.receiptNumber}</p><p class="text-gray-300">${order.customerName}</p></div><div class="flex-1 text-center"><p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p><p class="text-gray-400">${orderTime}</p></div><div class="flex-1 text-center"><p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p></div><div class="flex-1 flex justify-center items-center space-x-2"><select onchange="updateOrderStatus('${order.id}', this.value)" class="bg-black border border-golden rounded p-2 text-white"><option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option><option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option></select></div><div class="flex-1 flex justify-end space-x-2"><button onclick="showAdminReceipt('${order.id}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button><button onclick="deleteOrder('${order.id}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button></div></div>`; 
-    }); 
-    populateCalendarWithSales(); 
+
+    if (appState.todaysOrders.length === 0) { listContainer.innerHTML = '<p class="text-center text-gray-400">No orders for today yet.</p>'; }
+    else {
+        appState.todaysOrders.forEach(order => { 
+            const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'; 
+            const typeIcons = { 'Dine-In': 'fa-utensils', 'Pick-Up': 'fa-shopping-bag', 'Delivery': 'fa-motorcycle' }; 
+            const paymentButton = (order.paymentMode === 'Cash' && !order.cashReceived) ? `<button onclick="showPaymentModal('${order.id}')" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition">Cash</button>` : '';
+            listContainer.innerHTML += `<div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0"><div class="flex-1 text-center md:text-left"><p class="text-lg font-bold text-golden">#${order.receiptNumber}</p><p class="text-gray-300">${order.customerName}</p></div><div class="flex-1 text-center"><p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p><p class="text-gray-400">${orderTime}</p></div><div class="flex-1 text-center"><p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p></div><div class="flex-1 flex justify-center items-center space-x-2"><select onchange="updateOrderStatus('${order.id}', this.value)" class="bg-black border border-golden rounded p-2 text-white"><option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option><option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option></select></div><div class="flex-1 flex justify-end space-x-2"><button onclick="showAdminReceipt('${order.id}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button>${paymentButton}<button onclick="deleteOrder('${order.id}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button></div></div>`; 
+        }); 
+    }
+    // Only fetch all orders if needed for the calendar
+    if (appState.allOrdersFetched) {
+        populateCalendarWithSales(); 
+    }
 }
 function showAdminReceipt(orderId) { 
-    const order = appState.allOrders.find(o => o.id === orderId); 
+    // Search both today's orders and all orders for robustness
+    const order = appState.todaysOrders.find(o => o.id === orderId) || appState.allOrders.find(o => o.id === orderId); 
     if (!order) return; 
     const modalContent = document.getElementById('admin-receipt-content'); 
     if(!modalContent) return;
     let itemsHTML = ''; 
     order.items.forEach(item => { itemsHTML += `<p>${item.quantity}x ${item.name} <span class="float-right">₱${(item.price * item.quantity).toFixed(2)}</span></p>`; }); 
-    modalContent.innerHTML = `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-japanese text-golden">Order #${order.receiptNumber}</h2></div><div class="bg-black p-4 rounded-lg border border-golden space-y-2"><p><strong>Customer:</strong> ${order.customerName}</p><p><strong>Time:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : 'N/A'}</p><p><strong>Type:</strong> ${order.orderType}</p>${order.orderType === 'Delivery' ? `<p><strong>Address:</strong> ${order.location} (${order.landmark})</p>` : ''}${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}<p><strong>Payment:</strong> ${order.paymentMode}</p>${order.hotSauce ? `<p><strong>Hot Sauce:</strong> Yes (${order.hotSauceNotes || 'No notes'})</p>` : '<p><strong>Hot Sauce:</strong> No</p>'}<hr class="my-2 border-golden border-dashed">${itemsHTML}<hr class="my-2 border-golden border-dashed"><div class="text-right space-y-1"><p>Subtotal: <span class="float-right">₱${order.subtotal.toFixed(2)}</span></p>${order.discount > 0 ? `<p class="text-green-400">Discount: <span class="float-right">- ₱${order.discount.toFixed(2)}</span></p>` : ''}<p>Delivery: <span class="float-right">₱${order.deliveryCharge.toFixed(2)}</span></p><p class="text-xl font-bold">Total: <span class="text-golden float-right">₱${order.totalAmount.toFixed(2)}</span></p></div></div>`; 
+    let paymentHTML = '';
+    if (order.cashReceived) {
+        paymentHTML = `<hr class="my-2 border-golden border-dashed"><div class="text-right space-y-1"><p>Amount Paid: <span class="float-right">₱${order.cashReceived.toFixed(2)}</span></p><p>Change: <span class="text-green-400 float-right">₱${order.change.toFixed(2)}</span></p></div>`;
+    }
+    modalContent.innerHTML = `<div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-japanese text-golden">Order #${order.receiptNumber}</h2></div><div class="bg-black p-4 rounded-lg border border-golden space-y-2"><p><strong>Customer:</strong> ${order.customerName}</p><p><strong>Time:</strong> ${order.timestamp ? new Date(order.timestamp).toLocaleString() : 'N/A'}</p><p><strong>Type:</strong> ${order.orderType}</p>${order.orderType === 'Delivery' ? `<p><strong>Address:</strong> ${order.location} (${order.landmark})</p>` : ''}${order.orderType === 'Pick-Up' && order.pickupTime ? `<p><strong>Pick-up Time:</strong> ${order.pickupTime}</p>` : ''}<p><strong>Payment:</strong> ${order.paymentMode}</p>${order.hotSauce ? `<p><strong>Hot Sauce:</strong> Yes (${order.hotSauceNotes || 'No notes'})</p>` : '<p><strong>Hot Sauce:</strong> No</p>'}<hr class="my-2 border-golden border-dashed">${itemsHTML}<hr class="my-2 border-golden border-dashed"><div class="text-right space-y-1"><p>Subtotal: <span class="float-right">₱${order.subtotal.toFixed(2)}</span></p>${order.discount > 0 ? `<p class="text-green-400">Discount: <span class="float-right">- ₱${order.discount.toFixed(2)}</span></p>` : ''}<p>Delivery: <span class="float-right">₱${order.deliveryCharge.toFixed(2)}</span></p><p class="text-xl font-bold">Total: <span class="text-golden float-right">₱${order.totalAmount.toFixed(2)}</span></p></div>${paymentHTML}</div>`; 
     document.getElementById('adminReceiptModal').classList.remove('hidden'); 
 }
 function closeAdminReceipt() { document.getElementById('adminReceiptModal').classList.add('hidden'); }
@@ -960,12 +1075,47 @@ function updateCashierOrdersView() {
     const listContainer = document.getElementById('cashier-orders-list'); 
     if(!listContainer) return;
     listContainer.innerHTML = ''; 
-    if (appState.allOrders.length === 0) { listContainer.innerHTML = '<p class="text-center text-gray-400">No orders yet.</p>'; return; } 
-    appState.allOrders.forEach(order => { 
-        const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'; 
-        const typeIcons = { 'Dine-In': 'fa-utensils', 'Pick-Up': 'fa-shopping-bag', 'Delivery': 'fa-motorcycle' }; 
-        listContainer.innerHTML += `<div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0"><div class="flex-1 text-center md:text-left"><p class="text-lg font-bold text-golden">#${order.receiptNumber}</p><p class="text-gray-300">${order.customerName}</p></div><div class="flex-1 text-center"><p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p><p class="text-gray-400">${orderTime}</p></div><div class="flex-1 text-center"><p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p></div><div class="flex-1 flex justify-center items-center space-x-2"><select onchange="updateOrderStatus('${order.id}', this.value)" class="bg-black border border-golden rounded p-2 text-white"><option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option><option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option></select></div><div class="flex-1 flex justify-end space-x-2"><button onclick="showAdminReceipt('${order.id}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button><button onclick="deleteOrder('${order.id}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button></div></div>`; 
-    }); 
+    
+    if (appState.todaysOrders.length === 0) { listContainer.innerHTML = '<p class="text-center text-gray-400">No orders for today yet.</p>'; }
+    else { 
+        appState.todaysOrders.forEach(order => { 
+            const orderTime = order.timestamp ? new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '...'; 
+            const typeIcons = { 'Dine-In': 'fa-utensils', 'Pick-Up': 'fa-shopping-bag', 'Delivery': 'fa-motorcycle' };
+            const paymentButton = (order.paymentMode === 'Cash' && !order.cashReceived) ? `<button onclick="showPaymentModal('${order.id}')" class="bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition">Cash</button>` : ''; 
+            listContainer.innerHTML += `<div class="bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0"><div class="flex-1 text-center md:text-left"><p class="text-lg font-bold text-golden">#${order.receiptNumber}</p><p class="text-gray-300">${order.customerName}</p></div><div class="flex-1 text-center"><p><i class="fas ${typeIcons[order.orderType]} mr-2"></i>${order.orderType}</p><p class="text-gray-400">${orderTime}</p></div><div class="flex-1 text-center"><p class="text-2xl font-bold">₱${order.totalAmount.toFixed(2)}</p></div><div class="flex-1 flex justify-center items-center space-x-2"><select onchange="updateOrderStatus('${order.id}', this.value)" class="bg-black border border-golden rounded p-2 text-white"><option value="Pending" ${order.status === 'Pending' ? 'selected' : ''}>Pending</option><option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option><option value="Done" ${order.status === 'Done' ? 'selected' : ''}>Done</option></select></div><div class="flex-1 flex justify-end space-x-2"><button onclick="showAdminReceipt('${order.id}')" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition">View</button>${paymentButton}<button onclick="deleteOrder('${order.id}')" class="bg-red-700 text-white py-2 px-4 rounded-lg hover:bg-red-800 transition"><i class="fas fa-trash"></i></button></div></div>`; 
+        }); 
+    }
+}
+async function fetchAllOrdersForHistory() {
+    if (appState.allOrdersFetched) {
+        console.log("All orders already fetched for history.");
+        return;
+    }
+    console.log("Fetching all orders for sales history...");
+    try {
+        const snapshot = await db.collection("orders").orderBy("timestamp", "desc").get();
+        appState.allOrders = [];
+        snapshot.forEach(doc => {
+            const orderData = doc.data();
+            orderData.id = doc.id;
+            if (orderData.timestamp && typeof orderData.timestamp.toDate === 'function') {
+                orderData.timestamp = orderData.timestamp.toDate();
+            }
+            appState.allOrders.push(orderData);
+        });
+        appState.allOrdersFetched = true;
+        console.log(`Fetched ${appState.allOrders.length} total orders for history.`);
+    } catch (error) {
+        console.error("Error fetching all orders for history:", error);
+    }
+}
+async function toggleSalesHistory() { 
+    await fetchAllOrdersForHistory(); // Ensure all data is loaded before showing history
+    const today = new Date().toISOString().split('T')[0]; 
+    document.getElementById('sales-start-date').value = today; 
+    document.getElementById('sales-end-date').value = today; 
+    generateSalesReport(); 
+    document.getElementById('salesHistoryModal').classList.remove('hidden'); 
 }
 function initializeAdminCalendar() { 
     if (!window.Calendar || calendarInstance) return; 
@@ -975,21 +1125,15 @@ function initializeAdminCalendar() {
     calendarEl.addEventListener('vjc-month-change', () => { setTimeout(populateCalendarWithSales, 100); }); 
 }
 function populateCalendarWithSales() { 
-    if (!calendarInstance) return; 
+    if (!calendarInstance || !appState.allOrdersFetched) return; 
     const salesByDate = appState.allOrders.filter(order => order.status === 'Done' && order.timestamp).reduce((acc, order) => { const date = new Date(order.timestamp).toISOString().split('T')[0]; if (!acc[date]) { acc[date] = 0; } acc[date] += order.totalAmount; return acc; }, {}); 
     const dateElements = document.querySelectorAll('.vjc-date:not(.vjc-date--disabled)'); 
     dateElements.forEach(el => { const dateStr = el.dataset.date; const contentWrapper = el.querySelector('.vjc-date-content') || el; const existingSaleEl = contentWrapper.querySelector('.vjc-day-sale'); if (existingSaleEl) { existingSaleEl.remove(); } if (salesByDate[dateStr]) { const saleAmount = salesByDate[dateStr]; const saleEl = document.createElement('span'); saleEl.className = 'vjc-day-sale'; saleEl.textContent = `₱${Math.round(saleAmount)}`; contentWrapper.appendChild(saleEl); } }); 
 }
-function showSalesForDate(dateStr) { 
+async function showSalesForDate(dateStr) { 
+    await fetchAllOrdersForHistory();
     document.getElementById('sales-start-date').value = dateStr; 
     document.getElementById('sales-end-date').value = dateStr; 
-    generateSalesReport(); 
-    document.getElementById('salesHistoryModal').classList.remove('hidden'); 
-}
-function toggleSalesHistory() { 
-    const today = new Date().toISOString().split('T')[0]; 
-    document.getElementById('sales-start-date').value = today; 
-    document.getElementById('sales-end-date').value = today; 
     generateSalesReport(); 
     document.getElementById('salesHistoryModal').classList.remove('hidden'); 
 }
@@ -1014,8 +1158,8 @@ function exportSalesToCSV() {
     endDate.setHours(23,59,59,999); 
     const filteredOrders = appState.allOrders.filter(o => o.timestamp && new Date(o.timestamp) >= startDate && new Date(o.timestamp) <= endDate); 
     if (filteredOrders.length === 0) { alert("No sales data to export for the selected period."); return; } 
-    let csvContent = "data:text/csv;charset=utf-8,Receipt Number,Date,Time,Customer,Type,Status,Subtotal,Discount,Delivery,Total,Payment,Items\n"; 
-    filteredOrders.forEach(order => { const orderDate = new Date(order.timestamp); const date = orderDate.toLocaleDateString(); const time = orderDate.toLocaleTimeString(); const items = order.items.map(i => `${i.quantity}x ${i.name}`).join('; '); csvContent += [`"${order.receiptNumber}"`, date, time, `"${order.customerName}"`, order.orderType, order.status, order.subtotal, order.discount, order.deliveryCharge, order.totalAmount, order.paymentMode, `"${items}"`].join(',') + "\r\n"; }); 
+    let csvContent = "data:text/csv;charset=utf-8,Receipt Number,Date,Time,Customer,Type,Status,Subtotal,Discount,Delivery,Total,Payment,Items,Cash Received,Change\n"; 
+    filteredOrders.forEach(order => { const orderDate = new Date(order.timestamp); const date = orderDate.toLocaleDateString(); const time = orderDate.toLocaleTimeString(); const items = order.items.map(i => `${i.quantity}x ${i.name}`).join('; '); csvContent += [`"${order.receiptNumber}"`, date, time, `"${order.customerName}"`, order.orderType, order.status, order.subtotal, order.discount, order.deliveryCharge, order.totalAmount, order.paymentMode, `"${items}"`, order.cashReceived || 0, order.change || 0].join(',') + "\r\n"; }); 
     const encodedUri = encodeURI(csvContent); 
     const link = document.createElement("a"); 
     link.setAttribute("href", encodedUri); 
@@ -1030,19 +1174,27 @@ function printReceipt(elementId, isCustomerReceipt = false) {
     let contentToPrint = ''; 
     let orderToPrint; 
     if (isCustomerReceipt) { 
-        orderToPrint = appState.allOrders[0]; 
+        const receiptEl = document.getElementById('receipt-content');
+        if(receiptEl) {
+            const receiptNum = receiptEl.querySelector('h3').textContent.replace('Receipt #','');
+            orderToPrint = appState.allOrders.find(o => o.receiptNumber === receiptNum) || appState.todaysOrders.find(o => o.receiptNumber === receiptNum);
+        }
     } else { 
         const adminReceiptWrapper = document.getElementById(elementId); 
         const h2 = adminReceiptWrapper ? adminReceiptWrapper.querySelector('h2') : null;
         if(h2){
             const receiptNumberText = h2.textContent.replace('Order #', ''); 
-            orderToPrint = appState.allOrders.find(o => o.receiptNumber === receiptNumberText); 
+            orderToPrint = appState.allOrders.find(o => o.receiptNumber === receiptNumberText) || appState.todaysOrders.find(o => o.receiptNumber === receiptNumberText); 
         }
     } 
     if (orderToPrint) { 
         let itemsHTML = ''; 
         orderToPrint.items.forEach(item => { itemsHTML += `<tr><td class="item-col">${item.name}</td><td class="qty-col">${item.quantity}</td><td class="price-col">P${(item.price * item.quantity).toFixed(2)}</td></tr>`; }); 
-        contentToPrint = `<div class="print-header"><h1>TARAYAKI</h1><p>Tara, Takoyaki!</p><p>${new Date(orderToPrint.timestamp).toLocaleString()}</p><hr class="print-hr"><p>Receipt #${orderToPrint.receiptNumber}</p><p>Customer: ${orderToPrint.customerName}</p>${isCustomerReceipt ? '' : `<p>Status: ${orderToPrint.status}</p>`}</div><table class="print-table"><thead><tr><th class="item-col">Item</th><th class="qty-col">Qty</th><th class="price-col">Price</th></tr></thead><tbody>${itemsHTML}</tbody></table><hr class="print-hr"><div class="print-totals"><p>Subtotal: P${orderToPrint.subtotal.toFixed(2)}</p>${orderToPrint.discount > 0 ? `<p>Discount: -P${orderToPrint.discount.toFixed(2)}</p>` : ''}<p>Delivery: P${orderToPrint.deliveryCharge.toFixed(2)}</p><p class="total">TOTAL: P${orderToPrint.totalAmount.toFixed(2)}</p></div><p style="text-align: center; margin-top: 20px;">Thank you for your order!</p>`; 
+        let paymentPrintHTML = '';
+        if (orderToPrint.cashReceived) {
+            paymentPrintHTML = `<hr class="print-hr"><div class="print-totals"><p>Amount Paid: P${orderToPrint.cashReceived.toFixed(2)}</p><p>Change: P${orderToPrint.change.toFixed(2)}</p></div>`;
+        }
+        contentToPrint = `<div class="print-header"><h1>TARAYAKI</h1><p>Tara, Takoyaki!</p><p>${new Date(orderToPrint.timestamp).toLocaleString()}</p><hr class="print-hr"><p>Receipt #${orderToPrint.receiptNumber}</p><p>Customer: ${orderToPrint.customerName}</p>${isCustomerReceipt ? '' : `<p>Status: ${orderToPrint.status}</p>`}</div><table class="print-table"><thead><tr><th class="item-col">Item</th><th class="qty-col">Qty</th><th class="price-col">Price</th></tr></thead><tbody>${itemsHTML}</tbody></table><hr class="print-hr"><div class="print-totals"><p>Subtotal: P${orderToPrint.subtotal.toFixed(2)}</p>${orderToPrint.discount > 0 ? `<p>Discount: -P${orderToPrint.discount.toFixed(2)}</p>` : ''}<p>Delivery: P${orderToPrint.deliveryCharge.toFixed(2)}</p><p class="total">TOTAL: P${orderToPrint.totalAmount.toFixed(2)}</p></div>${paymentPrintHTML}<p style="text-align: center; margin-top: 20px;">Thank you for your order!</p>`; 
     } 
     if (contentToPrint && printArea) { 
         printArea.innerHTML = contentToPrint; 
@@ -1050,7 +1202,71 @@ function printReceipt(elementId, isCustomerReceipt = false) {
         printArea.innerHTML = ''; 
     } 
 }
+function formatReceiptAsText(order) {
+    if (!order) return '';
 
+    let text = `TARAYAKI Order Confirmation\n`;
+    text += `Receipt #: ${order.receiptNumber}\n`;
+    text += `Customer: ${order.customerName}\n`;
+    text += `Type: ${order.orderType}\n`;
+    text += `--------------------------------\n`;
+    order.items.forEach(item => {
+        text += `${item.quantity}x ${item.name} - ₱${(item.price * item.quantity).toFixed(2)}\n`;
+    });
+    text += `--------------------------------\n`;
+    text += `Subtotal: ₱${order.subtotal.toFixed(2)}\n`;
+    if (order.discount > 0) {
+        text += `Combo Discount: -₱${order.discount.toFixed(2)}\n`;
+    }
+    if (order.deliveryCharge > 0) {
+        text += `Delivery Fee: ₱${order.deliveryCharge.toFixed(2)}\n`;
+    }
+    text += `TOTAL: ₱${order.totalAmount.toFixed(2)}\n`;
+    text += `Payment Method: ${order.paymentMode}\n`;
+    if (order.cashReceived) {
+        text += `Amount Paid: ₱${order.cashReceived.toFixed(2)}\n`;
+        text += `Change: ₱${order.change.toFixed(2)}\n`;
+    }
+    text += `--------------------------------\n`;
+    text += `Thank you for your order!`;
+
+    return text;
+}
+function copyReceipt(showNotification = true) {
+    const receiptModal = document.getElementById('receiptModal');
+    const receiptText = receiptModal.dataset.receiptText;
+
+    if (!receiptText) {
+        console.error("Could not find receipt text to copy.");
+        return false;
+    }
+    
+    const textArea = document.getElementById('copy-helper');
+    textArea.value = receiptText;
+    textArea.select();
+    try {
+        document.execCommand('copy');
+        if (showNotification) {
+            const toast = document.getElementById('copy-toast');
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 2000);
+        }
+        return true;
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+        alert('Could not copy receipt text. Please select it manually.');
+        return false;
+    }
+}
+function shareToMessenger() {
+    const copied = copyReceipt(false); // Copy without showing the default toast
+    if (copied) {
+        alert("Receipt copied! Click OK to open Messenger and paste.");
+        window.open('https://www.messenger.com/', '_blank');
+    }
+}
 async function finalizeOrder() { 
     const customerName = document.getElementById('customer-name').value; 
     if (!customerName) { alert("Please enter your name."); return; } 
@@ -1061,9 +1277,22 @@ async function finalizeOrder() {
     if (appState.orderType === 'Delivery') { newOrder.location = `${document.getElementById('location').value}, ${document.getElementById('municipality').value}`; newOrder.landmark = document.getElementById('landmark').value; } 
     if (appState.orderType === 'Pick-Up') { newOrder.pickupTime = document.getElementById('pickup-time').value; } 
     newOrder.totalAmount = newOrder.subtotal - newOrder.discount + newOrder.deliveryCharge; 
+
+    if (newOrder.paymentMode === 'Cash') {
+        const cashReceived = parseFloat(document.getElementById('checkout-cash-received').value) || 0;
+        if (cashReceived > 0 && cashReceived < newOrder.totalAmount) {
+             alert("Cash received cannot be less than the total amount due.");
+             return;
+        }
+        if (cashReceived >= newOrder.totalAmount) {
+            newOrder.cashReceived = cashReceived;
+            newOrder.change = cashReceived - newOrder.totalAmount;
+        }
+    }
+    
     try { 
-        await db.collection("orders").add(newOrder); 
-        const tempOrderForReceipt = {...newOrder, timestamp: new Date()}; 
+        const docRef = await db.collection("orders").add(newOrder); 
+        const tempOrderForReceipt = {...newOrder, timestamp: new Date(), id: docRef.id}; 
         showReceiptModal(tempOrderForReceipt); 
     } catch (error) { 
         console.error("Error adding order to database: ", error); 
@@ -1087,7 +1316,7 @@ async function confirmDelete() {
     } catch (error) { console.error("Error deleting order: ", error); } 
 }
 function deleteOrder(orderId) { 
-    const order = appState.allOrders.find(o => o.id === orderId); 
+    const order = appState.todaysOrders.find(o => o.id === orderId); 
     if (!order) return; 
     const detailsEl = document.getElementById('delete-confirm-details'); 
     detailsEl.innerHTML = `<p><strong>Receipt:</strong> <span class="text-golden">#${order.receiptNumber}</span></p><p><strong>Customer:</strong> ${order.customerName}</p><p><strong>Total:</strong> ₱${order.totalAmount.toFixed(2)}</p>`; 
@@ -1095,7 +1324,51 @@ function deleteOrder(orderId) {
     document.getElementById('deleteConfirmModal').classList.remove('hidden'); 
 }
 function closeDeleteConfirmModal() { document.getElementById('deleteConfirmModal').classList.add('hidden'); }
-
+function showPaymentModal(orderId) {
+    const order = appState.todaysOrders.find(o => o.id === orderId);
+    if (!order) return;
+    document.getElementById('payment-total-due').textContent = `₱${order.totalAmount.toFixed(2)}`;
+    const cashInput = document.getElementById('cash-received-input');
+    cashInput.value = '';
+    document.getElementById('payment-change-display').textContent = '₱0.00';
+    cashInput.oninput = () => {
+        const totalDue = order.totalAmount;
+        const cashReceived = parseFloat(cashInput.value) || 0;
+        let change = cashReceived - totalDue;
+        if (change < 0) change = 0;
+        document.getElementById('payment-change-display').textContent = `₱${change.toFixed(2)}`;
+    };
+    document.getElementById('save-payment-btn').dataset.orderId = orderId;
+    document.getElementById('paymentModal').classList.remove('hidden');
+    cashInput.focus();
+}
+function closePaymentModal() {
+    const cashInput = document.getElementById('cash-received-input');
+    cashInput.oninput = null;
+    document.getElementById('paymentModal').classList.add('hidden');
+}
+async function savePayment() {
+    const orderId = document.getElementById('save-payment-btn').dataset.orderId;
+    const order = appState.todaysOrders.find(o => o.id === orderId);
+    if(!order) return;
+    const cashReceived = parseFloat(document.getElementById('cash-received-input').value) || 0;
+    if (cashReceived < order.totalAmount) {
+        alert("Cash received cannot be less than the total amount due.");
+        return;
+    }
+    const change = cashReceived - order.totalAmount;
+    try {
+        await db.collection("orders").doc(orderId).update({
+            cashReceived: cashReceived,
+            change: change
+        });
+        console.log(`Payment for order ${orderId} saved.`);
+        closePaymentModal();
+    } catch (error) {
+        console.error("Error saving payment details: ", error);
+        alert("Could not save payment details. Please try again.");
+    }
+}
 </script>
 <script>
     if ('serviceWorker' in navigator) {
